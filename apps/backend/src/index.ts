@@ -6,14 +6,12 @@ import { loadJSON, saveJSON } from './utils';
 import verifyToken from './middleware';
 import { createClerkClient } from '@clerk/clerk-sdk-node';
 import { CLERK_API_KEY } from './secrets';
-import { CreateNote } from 'helpers/notes';
+import { CreateNote, GetUserNotes } from 'helpers/notes';
 
 // initialize a Clerk client with API key from env
 const clerkClient = createClerkClient({  secretKey: CLERK_API_KEY });
 
 const app = express();
-// users are managed by Clerk; we only store notes
-const notesPath = "./notes.json"
 
 // parse JSON bodies for POST/PUT requests
 app.use(express.json());
@@ -47,16 +45,8 @@ app.post('/notes', verifyToken, async(req,res)=>{
     created_at: new Date(),
     updated_at: new Date()
    }
-   try {
-    await CreateNote(note)
-    return res.status(201).send({note})
-   } catch (e) {
-    return res.status(500).send({
-      "error": "db error",
-      "e": e
-    })
-   }
-    
+   const response = await CreateNote(note)
+    return res.status(201).send(response)
 })
 app.get('/notes', verifyToken, async (req, res) => {
    if (!req.verified || typeof req.verified === 'string' || !('id' in req.verified)) {
@@ -64,9 +54,8 @@ app.get('/notes', verifyToken, async (req, res) => {
    }
    const userId = req.verified.id;
 
-   const notes = await loadJSON<Notes[]>(notesPath);
-   const usernotes = notes?.filter(n => n.user_id === userId);
-   return res.status(200).json(usernotes || []);
+   const notes = await GetUserNotes(userId)
+   return res.status(200).json(notes || []);
 });
 
 // expose an endpoint to fetch users from Clerk
