@@ -3,9 +3,7 @@ import type { Appearance } from "@clerk/types";
 import "./globals.css";
 import Script from "next/script";
 import localFont from "next/font/local";
-import { templateMetadata } from "./_template/content/metadata";
 
-export const metadata = templateMetadata;
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",

@@ -1,73 +1,143 @@
-import { UserDetails } from "../components/user-details";
-import { UserButton } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
-import { CodeSwitcher } from "../components/code-switcher";
-import { LearnMore } from "../_template/components/learn-more";
-import { Footer } from "../_template/components/footer";
-import { ClerkLogo } from "../_template/components/clerk-logo";
-import { NextLogo } from "../_template/components/next-logo";
-import Link from "next/link";
+"use client";
 
-import { DASHBOARD_CARDS } from "../_template/content/cards";
-import { DeployButton } from "../_template/components/deploy-button";
+import { useEffect, useState } from "react";
+import { useAuth, useUser, SignInButton, SignOutButton } from "@clerk/nextjs";
+import { postUserNote, getUserNotes } from "../lib/api";
 
-export default async function DashboardPage() {
-  await auth.protect();
+type Note = {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+};
+
+export default function Home() {
+  const { getToken, isLoaded } = useAuth();
+  const { user } = useUser();
+
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const load = async () => {
+      setLoading(true);
+      try{
+        const token = await getToken({ template: "codesarathi-backend" });
+        if (!token) {
+          setError("Failed to authenticate");
+          return;
+        }
+        const resp = await getUserNotes(token);
+        if (resp.success) setNotes(resp.data || []);
+        else setError(resp.error || "Failed to load notes");
+      } catch (e: any) {
+        console.error(e);
+        setError(e.message || "Failed to load notes");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [isLoaded, getToken]);
+
+  const addNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    try {
+      const token = await getToken({ template: "codesarathi-backend" });
+      if (!token) {
+        setError("Failed to authenticate");
+        return;
+      }
+      const created = await postUserNote(token, title, content);
+      if (!created.success) throw new Error(created.error || "Create failed");
+      // refresh
+      setTitle("");
+      setContent("");
+      const notesResp = await getUserNotes(token);
+      if (notesResp.success) setNotes(notesResp.data || []);
+      else setError(notesResp.error || "Failed to refresh notes");
+    } catch (e: any) {
+      console.error(e);
+      setError(e.message || "Failed to create note");
+    }
+  };
 
   return (
-    <>
-      <main className="max-w-300 w-full mx-auto">
-        <div className="grid grid-cols-[1fr_20.5rem] gap-10 pb-10">
-          <div>
-            <header className="flex items-center justify-between w-full h-16 gap-4">
-              <div className="flex gap-4">
-                <div className="bg-[#F4F4F5] px-4 py-3 rounded-full inline-flex gap-4">
-                  <ClerkLogo />
-                  <div aria-hidden className="w-px h-6 bg-[#C7C7C8]" />
-                  <NextLogo />
-                </div>
-                <Link
-                  href="/"
-                  className="flex items-center gap-2 font-medium text-[0.8125rem] rounded-full px-3 py-2 hover:bg-gray-100"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                  Back to Home
-                </Link>
-              </div>
-              <div className="flex items-center gap-2">
-                <UserButton
-                  appearance={{
-                    elements: {
-                      userButtonAvatarBox: "size-8",
-                    },
-                  }}
-                />
-              </div>
-            </header>
-            <UserDetails />
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center justify-center h-16 w-full">
-              <DeployButton className="h-8" />
-            </div>
-            <CodeSwitcher />
-          </div>
+    <div className="min-h-screen flex flex-col">
+      <header className="flex items-center justify-between p-6 border-b">
+        <h1 className="text-2xl font-semibold">Snipnest — Notes</h1>
+        <div className="flex items-center gap-4">
+          {user ? (
+            <>
+              <span className="text-sm text-zinc-600">{user.firstName || user.fullName}</span>
+              <SignOutButton>
+                <button className="px-3 py-1 bg-red-600 text-white rounded">Sign out</button>
+              </SignOutButton>
+            </>
+          ) : (
+            <SignInButton>
+              <button className="px-3 py-1 bg-blue-600 text-white rounded">Sign in</button>
+            </SignInButton>
+          )}
         </div>
+      </header>
+
+      <main className="p-6 flex-1 max-w-4xl mx-auto w-full">
+        <section className="mb-8">
+          <h2 className="text-xl font-medium mb-2">Create a note</h2>
+          <form onSubmit={addNote} className="space-y-3">
+            <input
+              placeholder="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full p-2 border rounded"
+            />
+            <textarea
+              placeholder="Content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="w-full p-2 border rounded h-28"
+            />
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-green-600 text-white rounded"
+                disabled={!user}
+              >
+                Add note
+              </button>
+              {!user && <span className="text-sm text-zinc-500">Sign in to create notes</span>}
+            </div>
+            {error && <div className="text-red-600">{error}</div>}
+          </form>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-medium mb-4">Your notes</h2>
+          {loading ? (
+            <div>Loading...</div>
+          ) : notes.length === 0 ? (
+            <div className="text-zinc-500">No notes yet.</div>
+          ) : (
+            <ul className="space-y-4">
+              {notes.map((n) => (
+                <li key={n.id} className="p-4 border rounded">
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="font-semibold">{n.title}</h3>
+                    <span className="text-sm text-zinc-500">{new Date(n.created_at).toLocaleString()}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-zinc-700">{n.content}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </main>
-      <LearnMore cards={DASHBOARD_CARDS} />
-      <Footer />
-    </>
+    </div>
   );
 }

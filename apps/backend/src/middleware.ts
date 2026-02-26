@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
-import { createClerkClient } from "@clerk/clerk-sdk-node";
-import { SECRET, CLERK_API_KEY } from "./secrets";
+import jwt from "jsonwebtoken";
+import { SECRET } from "./secrets";
 import { UserClaims } from "./types";
 
 declare global {
@@ -11,23 +11,21 @@ declare global {
   }
 }
 
-const clerkClient = createClerkClient({ secretKey: CLERK_API_KEY });
-
 export default async function verifyToken(req: Request, res: Response, next: NextFunction) {
+  // Allow CORS preflight requests to pass through without requiring auth
+  if (req.method === 'OPTIONS') return next();
   const auth = req.headers.authorization;
   if (!auth) return res.status(401).json({ error: "No token" });
 
   const token = auth.split(" ")[1];
 
   try {
-    // clerkClient.verifyToken will validate the JWT using the provided secret
-    // (our template secret) and return the decoded payload.
-    const decoded = await clerkClient.verifyToken(token, { jwtKey: SECRET });
+    const decoded = jwt.verify(token, SECRET);
     if (!decoded || typeof decoded === 'string') {
       return res.status(403).json({ error: "Invalid token" });
     }
     // the token payload includes `sub` which is the Clerk user id
-    const userId = (decoded as any).sub || (decoded as any).user_id || '';
+    const userId = (decoded as any).sub || (decoded as any).id || '';
     req.verified = { id: userId } as UserClaims;
     next();
   } catch (err) {

@@ -1,12 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import { Notes } from './types';
-import { nanoid } from 'nanoid'
-import { loadJSON, saveJSON } from './utils';
+import { nanoid } from 'nanoid';
 import verifyToken from './middleware';
 import { createClerkClient } from '@clerk/clerk-sdk-node';
 import { CLERK_API_KEY } from './secrets';
-import { CreateNote, GetUserNotes } from 'helpers/notes';
+import { CreateNote, GetUserNotes } from './helpers/notes';
 
 // initialize a Clerk client with API key from env
 const clerkClient = createClerkClient({  secretKey: CLERK_API_KEY });
@@ -16,8 +15,18 @@ const app = express();
 // parse JSON bodies for POST/PUT requests
 app.use(express.json());
 
-// enable CORS for all origins
-app.use(cors({ origin: '*' }));
+// enable CORS for all origins and allow Authorization header for preflight
+app.use(
+  cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
+// respond to preflight requests for any route
+app.options('*', cors());
 
 const PORT = process.env.PORT || 9000;
 
