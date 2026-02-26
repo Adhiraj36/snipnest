@@ -1,14 +1,25 @@
 import express from 'express';
-import { Notes, User } from './types';
+import cors from 'cors';
+import { Notes } from './types';
 import { nanoid } from 'nanoid'
 import { loadJSON, saveJSON } from './utils';
+import verifyToken from './middleware';
+import { createClerkClient } from '@clerk/clerk-sdk-node';
+import { CLERK_API_KEY } from './secrets';
+import { CreateNote } from 'helpers/notes';
+
+// initialize a Clerk client with API key from env
+const clerkClient = createClerkClient({  secretKey: CLERK_API_KEY });
 
 const app = express();
-const userPath = "./users.json"
+// users are managed by Clerk; we only store notes
 const notesPath = "./notes.json"
 
 // parse JSON bodies for POST/PUT requests
 app.use(express.json());
+
+// enable CORS for all origins
+app.use(cors({ origin: '*' }));
 
 const PORT = process.env.PORT || 9000;
 
@@ -18,52 +29,59 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+app.post('/notes', verifyToken, async(req,res)=>{
+    if (!req.verified || typeof req.verified === 'string' || !('id' in req.verified)) {
+     return res.status(401).send({ error: 'Unauthorized' });
+   }
+   const userId = req.verified.id;
+   type notesreq={
+    title:string;
+    content:string;
+   }
+   const {title, content}=req.body as notesreq;
+   const note: Notes = {
+    id:nanoid(),
+    user_id:userId,
+    title,
+    content,
+    created_at: new Date(),
+    updated_at: new Date()
+   }
+   try {
+    await CreateNote(note)
+    return res.status(201).send({note})
+   } catch (e) {
+    return res.status(500).send({
+      "error": "db error",
+      "e": e
+    })
+   }
+    
+})
+app.get('/notes', verifyToken, async (req, res) => {
+   if (!req.verified || typeof req.verified === 'string' || !('id' in req.verified)) {
+     return res.status(401).send({ error: 'Unauthorized' });
+   }
+   const userId = req.verified.id;
 
-app.post('/notes', (req, res) => {
-    console.log(req.body)
-    if (req.body.user === 1) {
-        res.status(200).send([
-    { id: 1, title: 'Note 1', content: 'This is the first note.' },
-    { id: 2, title: 'Note 2', content: 'This is the second note.' },
-  ]);
-    } else {
-        res.status(401).send({ error: 'Unauthorized' });
-    }
+   const notes = await loadJSON<Notes[]>(notesPath);
+   const usernotes = notes?.filter(n => n.user_id === userId);
+   return res.status(200).json(usernotes || []);
 });
 
-app.post('/users/register', async (req, res) => {
-    type RequestBody = {
-        name: string;
-        email: string;
-        password: string;
-    }
-    const { name: username, email, password } = req.body as RequestBody;
-    let existingUsers = await loadJSON<User[]>(userPath)
-
-    if (existingUsers?.some(u => u.email === email)) {
-        return res.status(400).send({ error: "user already exists!" });
-    }
-
-    if(password.length < 6) {
-        return res.status(400).send({ error: 'Password must be at least 6 characters long.' });
-    }
-    
-    const user: User = {
-        id: nanoid(),
-        name: username,
-        password,
-        email,
-    } 
-
-    
-    if (existingUsers) {
-        existingUsers.push(user)
-        await saveJSON<User[]>(userPath, existingUsers)
-        return res.status(201).send(user)
-    } else {
-        await saveJSON<User[]>(userPath, [user])
-        return res.status(201).send(user)
-    }
+// expose an endpoint to fetch users from Clerk
+app.get('/users/me', verifyToken, async (req, res) => {
+    if (!req.verified || typeof req.verified === 'string' || !('id' in req.verified)) {
+     return res.status(401).send({ error: 'Unauthorized' });
+   }
+   const userId = req.verified.id;
+  try {
+    const users = await clerkClient.users.getUser(userId);
+    return res.status(200).json(users);
+  } catch (err) {
+    console.error('Failed to fetch users from Clerk', err);
+    return res.status(500).json({ error: 'Failed to fetch users' });
+  }
 });
 
 app.listen(PORT, () => {

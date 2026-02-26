@@ -3,11 +3,12 @@ export type Notes = {
     user_id: string;
     title: string;
     content: string;
+    created_at: Date;
+    updated_at: Date;
 }
 
-export type User = {
+// Clerk manages user records; the backend only cares about the authenticated
+// user's identifier which comes from the JWT payload.
+export type UserClaims = {
     id: string;
-    name: string;
-    email: string;
-    password: string;
 }
