@@ -1,17 +1,11 @@
 "use client"
 import axios from "axios";
+import type { Notes } from "@repo/shared-types";
+
+const BACKEND_URL = "https://organic-couscous-x54wjw77x4jvhpv4q-9000.app.github.dev"
 
 const getBackendURL = () => {
-    if (typeof window !== 'undefined') {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-        if (backendUrl) return backendUrl;
-        const host = window.location.hostname;
-        if (host.includes('app.github.dev')) {
-            return `https://${host.replace('-3000.', '-9000.')}`;
-        }
-        return 'http://localhost:9000';
-    }
-    return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:9000';
+    return BACKEND_URL;
 };
 
 const api = axios.create({
@@ -30,6 +24,7 @@ export async function getMe(token: string): Promise<ApiResult<any>> {
         const resp = await api.get("/users/me", {
             headers: { Authorization: `Bearer ${token}` },
         });
+        console.log(resp)
         return { success: true, data: resp.data };
     } catch (err: any) {
         console.error(err);
@@ -41,7 +36,7 @@ export async function postUserNote(
     token: string,
     title: string,
     content: string
-): Promise<ApiResult<any>> {
+): Promise<ApiResult<{ success: boolean }>> {
     try {
         const resp = await api.post(
             "/notes",
@@ -55,12 +50,12 @@ export async function postUserNote(
     }
 }
 
-export async function getUserNotes(token: string): Promise<ApiResult<any>> {
+export async function getUserNotes(token: string): Promise<ApiResult<Notes[]>> {
     try {
         const resp = await api.get("/notes", {
             headers: { Authorization: `Bearer ${token}` },
         });
-        return { success: true, data: resp.data };
+        return { success: true, data: resp.data as Notes[] };
     } catch (err: any) {
         console.error(err);
         return { success: false, error: err?.message || String(err) };

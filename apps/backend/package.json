@@ -12,6 +12,7 @@
     "db:browser": "npx drizzle-kit studio --host=0.0.0.0"
   },
   "dependencies": {
+    "@repo/shared-types": "*",
     "@clerk/clerk-sdk-node": "^5.1.6",
     "@types/cors": "^2.8.19",
     "better-sqlite3": "^12.6.2",

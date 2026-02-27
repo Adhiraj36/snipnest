@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { eq } from 'drizzle-orm';
-import { Notes } from '../types';
+import type { Notes } from '@repo/shared-types';
 import { notes } from '../../db/schema';
 import db from '../../db/index';
 

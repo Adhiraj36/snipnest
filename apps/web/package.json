@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@repo/shared-types": "*",
     "@clerk/nextjs": "6.34.0",
     "@clerk/types": "^4.101.18",
     "@tailwindcss/postcss": "^4.1.16",

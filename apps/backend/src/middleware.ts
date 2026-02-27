@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { createClerkClient } from "@clerk/clerk-sdk-node";
 import { CLERK_API_KEY } from "./secrets";
-import { UserClaims } from "./types";
+import type { UserClaims } from "@repo/shared-types";
 
 const clerkClient = createClerkClient({ secretKey: CLERK_API_KEY });
 

@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { Notes } from './types';
+import type { Notes } from '@repo/shared-types';
 import { nanoid } from 'nanoid';
 import verifyToken from './middleware';
 import { createClerkClient } from '@clerk/clerk-sdk-node';
