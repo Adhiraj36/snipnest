@@ -96,11 +96,26 @@ async function generateQuestions(
   topicName: string,
   questionCount: number,
 ): Promise<GeneratedQuestion[]> {
+  const lang = interest.language;
+  const langHint =
+    lang === 'python'
+      ? 'Python: starterCode should be just the function def (e.g. `def solve(arr):`) — no stdin/print needed, the driver is injected automatically.'
+      : lang === 'cpp'
+        ? 'C++: starterCode MUST include complete main() with cin/cout.'
+        : 'JavaScript: starterCode should be just the function (e.g. `function solve(arr) {}`) — no require/console.log needed, the driver is injected automatically.';
+
   const llmRaw = await callLLM(
     'question',
     `Generate ${questionCount} coding questions for ${interest.name} > ${subDomainName} > ${topicName}.\n` +
       'Return STRICT JSON only in this shape: ' +
-      '{"questions":[{"prompt":"","starterCode":"","testInput":"","expectedOutput":"","explanation":"","difficulty":"easy|medium|hard","questionType":"code","maxPoints":10}]}.',
+      '{"questions":[{"prompt":"","starterCode":"","testInput":"","expectedOutput":"","explanation":"","difficulty":"easy|medium|hard","questionType":"code","maxPoints":10}]}.\n\n' +
+      'CRITICAL RULES for each question:\n' +
+      `- Language: ${lang}\n` +
+      `- ${langHint}\n` +
+      '- testInput: a single JSON value that will be passed via stdin (e.g. "[1,2,3]", "hello", "5").\n' +
+      '- expectedOutput: EXACT expected stdout when calling the function with the parsed testInput (just the value, no extra whitespace).\n' +
+      '- The function must accept the parsed testInput as its argument and RETURN the result (not print it).\n' +
+      '- For functions with multiple params, testInput should be a JSON object: {"a":1,"b":2} — keys become arguments.\n',
   );
 
   const parsed = tryParseGeneratedQuestions(llmRaw);
@@ -409,4 +424,45 @@ export async function getQuestionBestScore(userId: string, questionId: string) {
     .from(questionAttempts)
     .where(and(eq(questionAttempts.question_id, questionId), eq(questionAttempts.user_id, userId)));
   return result[0]?.best ?? 0;
+}
+
+// ---------------------------------------------------------------------------
+// List all sessions for a user (for dashboard)
+// ---------------------------------------------------------------------------
+
+export async function getUserSessions(userId: string) {
+  const sessions = await db
+    .select()
+    .from(mentorSessions)
+    .where(eq(mentorSessions.user_id, userId))
+    .orderBy(desc(mentorSessions.created_at));
+
+  // Collect question counts + attempt counts per session
+  const enriched = await Promise.all(
+    sessions.map(async (s) => {
+      const qs = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(mentorQuestions)
+        .where(eq(mentorQuestions.session_id, s.id));
+
+      const acceptedCount = await db
+        .select({ count: sql<number>`count(distinct ${questionAttempts.question_id})` })
+        .from(questionAttempts)
+        .where(
+          and(
+            eq(questionAttempts.session_id, s.id),
+            eq(questionAttempts.user_id, userId),
+            eq(questionAttempts.judge0_status, 'Accepted'),
+          ),
+        );
+
+      return {
+        ...s,
+        questionCount: Number(qs[0]?.count ?? 0),
+        acceptedCount: Number(acceptedCount[0]?.count ?? 0),
+      };
+    }),
+  );
+
+  return enriched;
 }

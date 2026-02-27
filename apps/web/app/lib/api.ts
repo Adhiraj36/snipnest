@@ -122,7 +122,7 @@ export async function submitMentorAttempt(
     token: string,
     sessionId: string,
     payload: { questionId: string; submittedCode: string; languageId?: number }
-): Promise<ApiResult<{ accepted: boolean; pointsAwarded: number; nextQuestionIndex: number; completed: boolean }>> {
+): Promise<ApiResult<{ attempt: QuestionAttempt; accepted: boolean; pointsAwarded: number; nextQuestionIndex: number; completed: boolean }>> {
     try {
         const resp = await api.post(`/mentor/session/${sessionId}/submit`, payload, {
             headers: { Authorization: `Bearer ${token}` },
@@ -130,6 +130,7 @@ export async function submitMentorAttempt(
         return {
             success: true,
             data: resp.data as {
+                attempt: QuestionAttempt;
                 accepted: boolean;
                 pointsAwarded: number;
                 nextQuestionIndex: number;
@@ -148,6 +149,23 @@ export async function getMentorStats(token: string): Promise<ApiResult<MentorSta
             headers: { Authorization: `Bearer ${token}` },
         });
         return { success: true, data: resp.data as MentorStats };
+    } catch (err: any) {
+        console.error(err);
+        return { success: false, error: err?.message || String(err) };
+    }
+}
+
+export type EnrichedSession = MentorSession & {
+    questionCount: number;
+    acceptedCount: number;
+};
+
+export async function getMentorSessions(token: string): Promise<ApiResult<EnrichedSession[]>> {
+    try {
+        const resp = await api.get("/mentor/sessions/me", {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return { success: true, data: resp.data as EnrichedSession[] };
     } catch (err: any) {
         console.error(err);
         return { success: false, error: err?.message || String(err) };

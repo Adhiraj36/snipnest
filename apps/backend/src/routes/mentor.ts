@@ -4,6 +4,7 @@ import { INTEREST_CATALOG, findCatalogPath } from '../config/catalog';
 import {
   getSessionAttempts,
   getSessionDetails,
+  getUserSessions,
   getUserStats,
   startSession,
   submitAnswer,
@@ -192,6 +193,14 @@ router.get('/stats/me', verifyToken, async (req, res) => {
 
   const stats = await getUserStats(userId);
   return res.status(200).json(stats);
+});
+
+router.get('/sessions/me', verifyToken, async (req, res) => {
+  const userId = extractUserId(req);
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const sessions = await getUserSessions(userId);
+  return res.status(200).json(sessions);
 });
 
 export default router;
