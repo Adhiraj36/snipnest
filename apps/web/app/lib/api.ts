@@ -2,7 +2,7 @@
 import axios from "axios";
 import type { Notes } from "@repo/shared-types";
 
-const BACKEND_URL = "https://organic-couscous-x54wjw77x4jvhpv4q-9000.app.github.dev"
+const BACKEND_URL = "http://100.110.74.54:9000"
 
 const getBackendURL = () => {
     return BACKEND_URL;

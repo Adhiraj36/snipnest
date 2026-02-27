@@ -1,9 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import { createClerkClient } from "@clerk/clerk-sdk-node";
-import { CLERK_API_KEY } from "./secrets";
 import type { UserClaims } from "@repo/shared-types";
-
-const clerkClient = createClerkClient({ secretKey: CLERK_API_KEY });
+import jwt from 'jsonwebtoken';
+import { SECRET } from "./secrets";
 
 declare global {
   namespace Express {
@@ -23,7 +21,7 @@ export default async function verifyToken(req: Request, res: Response, next: Nex
 
   try {
     // Verify the session token using Clerk
-    const verified = await clerkClient.verifyToken(token);
+    const verified = jwt.verify(token, SECRET);
     if (!verified || !verified.sub) {
       return res.status(403).json({ error: "Invalid token" });
     }

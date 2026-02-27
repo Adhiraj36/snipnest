@@ -21,16 +21,21 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // In development, allow any origin; in production, restrict to specific origins
-    if (process.env.NODE_ENV === 'development') {
+    // In non-production, allow any origin to avoid local dev CORS issues
+    if (process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+      return;
+    }
+
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',');
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('CORS not allowed'));
-      }
+      callback(new Error('CORS not allowed'));
     }
   },
   credentials: true,

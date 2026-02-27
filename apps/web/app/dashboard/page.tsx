@@ -3,19 +3,13 @@
 import { useEffect, useState } from "react";
 import { useAuth, useUser, SignInButton, SignOutButton } from "@clerk/nextjs";
 import { postUserNote, getUserNotes } from "../lib/api";
-
-type Note = {
-  id: string;
-  title: string;
-  content: string;
-  created_at: string;
-};
+import type { Notes } from "@repo/shared-types";
 
 export default function Home() {
   const { getToken, isLoaded } = useAuth();
   const { user } = useUser();
 
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [notes, setNotes] = useState<Notes[]>([]);
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -25,8 +19,10 @@ export default function Home() {
     if (!isLoaded) return;
     const load = async () => {
       setLoading(true);
-      try{
-        const token = await getToken();
+      try {
+        const token = await getToken({
+          template: "codesarathi-backend",
+        });
         if (!token) {
           setError("Failed to authenticate");
           return;
@@ -48,7 +44,9 @@ export default function Home() {
     e.preventDefault();
     setError(null);
     try {
-      const token = await getToken();
+      const token = await getToken({
+        template: "codesarathi-backend",
+      });
       if (!token) {
         setError("Failed to authenticate");
         return;
@@ -74,14 +72,20 @@ export default function Home() {
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              <span className="text-sm text-zinc-600">{user.firstName || user.fullName}</span>
+              <span className="text-sm text-zinc-600">
+                {user.firstName || user.fullName}
+              </span>
               <SignOutButton>
-                <button className="px-3 py-1 bg-red-600 text-white rounded">Sign out</button>
+                <button className="px-3 py-1 bg-red-600 text-white rounded">
+                  Sign out
+                </button>
               </SignOutButton>
             </>
           ) : (
             <SignInButton>
-              <button className="px-3 py-1 bg-blue-600 text-white rounded">Sign in</button>
+              <button className="px-3 py-1 bg-blue-600 text-white rounded">
+                Sign in
+              </button>
             </SignInButton>
           )}
         </div>
@@ -111,7 +115,11 @@ export default function Home() {
               >
                 Add note
               </button>
-              {!user && <span className="text-sm text-zinc-500">Sign in to create notes</span>}
+              {!user && (
+                <span className="text-sm text-zinc-500">
+                  Sign in to create notes
+                </span>
+              )}
             </div>
             {error && <div className="text-red-600">{error}</div>}
           </form>
@@ -129,7 +137,12 @@ export default function Home() {
                 <li key={n.id} className="p-4 border rounded">
                   <div className="flex items-baseline justify-between">
                     <h3 className="font-semibold">{n.title}</h3>
-                    <span className="text-sm text-zinc-500">{new Date(n.created_at).toLocaleString()}</span>
+                    <span className="text-sm text-zinc-500">
+                      {(n.created_at instanceof Date
+                        ? n.created_at
+                        : new Date(n.created_at)
+                      ).toLocaleString()}
+                    </span>
                   </div>
                   <p className="mt-2 text-sm text-zinc-700">{n.content}</p>
                 </li>
