@@ -124,18 +124,32 @@ export default function MentorPage() {
         if (resumeId && token) {
           const sessionResp = await getMentorSession(token, resumeId);
           if (sessionResp.success) {
-            setSession(sessionResp.data.session);
-            setQuestions(sessionResp.data.questions);
-            const qi = sessionResp.data.session.current_question_index ?? 0;
-            const q = sessionResp.data.questions.find(
-              (q) => q.question_index === qi
-            );
-            setEditorCode(q?.starter_code || "");
+            const sess = sessionResp.data.session;
+            const qs = sessionResp.data.questions;
+            setSession(sess);
+            setQuestions(qs);
+            const qi = sess.current_question_index ?? 0;
+            const q = qs.find((q) => q.question_index === qi);
+
+            /* Pre-load the latest submission for the current question */
+            let resumedCode = q?.starter_code || "";
+            if (q) {
+              const attResp = await getMentorAttempts(token, resumeId, q.id);
+              if (attResp.success && attResp.data && attResp.data.length > 0) {
+                const real = attResp.data.filter(
+                  (a) => a.judge0_status.toLowerCase() !== "generated"
+                );
+                if (real.length > 0) {
+                  resumedCode = real[0].submitted_code || resumedCode;
+                }
+              }
+            }
+            setEditorCode(resumedCode);
             prevQIndexRef.current = qi;
             setChatHistory([
               {
                 role: "assistant",
-                content: `Welcome back! You're on question ${qi + 1}/${sessionResp.data.questions.length}. Let me know if you need any help.`,
+                content: `Welcome back! You're on question ${qi + 1}/${qs.length}. Let me know if you need any help.`,
               },
             ]);
           }
@@ -507,7 +521,7 @@ export default function MentorPage() {
             </div>
 
             {/* Chat messages */}
-            <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+            <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 thin-scrollbar">
               {chatHistory.length === 0 && !session && (
                 <div className="text-center text-zinc-500 text-sm mt-8">
                   <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center">
@@ -795,7 +809,7 @@ export default function MentorPage() {
                 className="absolute inset-0 bg-black/50"
                 onClick={() => setTheoryOpen(false)}
               />
-              <div className="relative ml-auto w-[28rem] max-w-full h-full bg-zinc-900 border-l border-zinc-700 shadow-2xl flex flex-col">
+              <div className="relative ml-auto w-[48rem] max-w-[85%] h-full bg-zinc-900 border-l border-zinc-700 shadow-2xl flex flex-col">
                 <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800">
                   <h3 className="font-semibold text-zinc-100">
                     Theory — {session.topic_id}
@@ -807,8 +821,8 @@ export default function MentorPage() {
                     ✕
                   </button>
                 </div>
-                <div className="flex-1 overflow-y-auto px-5 py-4">
-                  <div className="prose prose-sm prose-invert max-w-none prose-headings:text-orange-400 prose-a:text-orange-400 prose-strong:text-zinc-100 prose-code:text-orange-300 prose-code:bg-zinc-800 prose-code:px-1 prose-code:rounded prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800">
+                <div className="flex-1 overflow-y-auto px-6 py-5 thin-scrollbar">
+                  <div className="prose prose-base prose-invert max-w-none prose-headings:text-orange-400 prose-headings:border-b prose-headings:border-zinc-800 prose-headings:pb-2 prose-a:text-orange-400 prose-strong:text-zinc-100 prose-code:text-orange-300 prose-code:bg-zinc-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800 prose-pre:rounded-lg prose-li:marker:text-orange-400/60 prose-p:leading-relaxed">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {session.theory_content ||
                         streamingTheory ||
