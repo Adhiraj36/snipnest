@@ -26,7 +26,7 @@ export default function Home() {
     const load = async () => {
       setLoading(true);
       try{
-        const token = await getToken({ template: "codesarathi-backend" });
+        const token = await getToken();
         if (!token) {
           setError("Failed to authenticate");
           return;
@@ -48,7 +48,7 @@ export default function Home() {
     e.preventDefault();
     setError(null);
     try {
-      const token = await getToken({ template: "codesarathi-backend" });
+      const token = await getToken();
       if (!token) {
         setError("Failed to authenticate");
         return;

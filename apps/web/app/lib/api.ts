@@ -1,8 +1,21 @@
 "use client"
 import axios from "axios";
 
+const getBackendURL = () => {
+    if (typeof window !== 'undefined') {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+        if (backendUrl) return backendUrl;
+        const host = window.location.hostname;
+        if (host.includes('app.github.dev')) {
+            return `https://${host.replace('-3000.', '-9000.')}`;
+        }
+        return 'http://localhost:9000';
+    }
+    return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:9000';
+};
+
 const api = axios.create({
-    baseURL: "https://bookish-winner-pj6rxr4495pjf9x7-9000.app.github.dev",
+    baseURL: getBackendURL(),
     headers: {
         "Content-Type": "application/json",
     },

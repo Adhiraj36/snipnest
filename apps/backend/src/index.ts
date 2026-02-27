@@ -15,18 +15,34 @@ const app = express();
 // parse JSON bodies for POST/PUT requests
 app.use(express.json());
 
-// enable CORS for all origins and allow Authorization header for preflight
-app.use(
-  cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+// enable CORS with proper handling for credentials
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // In development, allow any origin; in production, restrict to specific origins
+    if (process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',');
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS not allowed'));
+      }
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 
 // respond to preflight requests for any route
-app.options('*', cors());
+app.options('*', cors(corsOptions));
 
 const PORT = process.env.PORT || 9000;
 
