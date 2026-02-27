@@ -21,9 +21,14 @@ import {
   startMentorSessionStream,
   submitMentorAttempt,
   streamAvatarChat,
+  getAvatarConfig,
+  getAvatarSessionToken,
   type AvatarChatMessage,
   type MentorStats,
 } from "../lib/api";
+import LiveAvatarMentor, {
+  type LiveAvatarMentorHandle,
+} from "../components/LiveAvatarMentor";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
@@ -97,6 +102,17 @@ export default function MentorPage() {
   /* track current question index to detect question changes */
   const prevQIndexRef = useRef<number | null>(null);
 
+  /* avatar mode */
+  type MentorMode = "chat" | "avatar";
+  const [mentorMode, setMentorMode] = useState<MentorMode>("chat");
+  const [avatarAvailable, setAvatarAvailable] = useState(false);
+  const [avatarSessionToken, setAvatarSessionToken] = useState<string | null>(
+    null
+  );
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const avatarRef = useRef<LiveAvatarMentorHandle>(null);
+
   /* ── initial load ──────────────────────────────────────────────────── */
   useEffect(() => {
     if (!isLoaded) return;
@@ -119,6 +135,12 @@ export default function MentorPage() {
           }
         }
         if (statsResp.success) setStats(statsResp.data);
+
+        /* Check if avatar feature is available */
+        const avatarCfg = await getAvatarConfig(token);
+        if (avatarCfg.success && avatarCfg.data?.available) {
+          setAvatarAvailable(true);
+        }
 
         /* Resume existing session if ?resume=<id> */
         if (resumeId && token) {
@@ -254,6 +276,46 @@ export default function MentorPage() {
     return parts.join("\n");
   }, [session, activeQ, editorCode, visibleAttempts, questions, catalog]);
 
+  /* ── avatar session management ─────────────────────────────────── */
+  const startAvatarSession = useCallback(async () => {
+    setAvatarError(null);
+    setAvatarLoading(true);
+    try {
+      const token = await getToken({ template: "codesarathi-backend" });
+      if (!token) { setAvatarError("Auth failed"); return; }
+      const resp = await getAvatarSessionToken(token);
+      if (!resp.success) { setAvatarError(resp.error || "Failed to get avatar token"); return; }
+      setAvatarSessionToken(resp.data.session_token);
+    } catch (e: any) {
+      setAvatarError(e.message);
+    } finally {
+      setAvatarLoading(false);
+    }
+  }, [getToken]);
+
+  const stopAvatarSession = useCallback(() => {
+    setAvatarSessionToken(null);
+    setMentorMode("chat");
+  }, []);
+
+  /** Switch to avatar mode — starts session if needed */
+  const switchToAvatar = useCallback(async () => {
+    setMentorMode("avatar");
+    if (!avatarSessionToken) {
+      await startAvatarSession();
+    }
+  }, [avatarSessionToken, startAvatarSession]);
+
+  /** Pipe a text message to the live avatar (non-blocking, best-effort) */
+  const sendToAvatar = useCallback(
+    (text: string) => {
+      if (mentorMode === "avatar" && avatarRef.current?.isReady) {
+        avatarRef.current.sendMessage(text);
+      }
+    },
+    [mentorMode]
+  );
+
   /* ── create session (streaming) ────────────────────────────────────── */
   const createSession = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -388,6 +450,17 @@ export default function MentorPage() {
         { role: "assistant", content: feedbackContent },
       ]);
 
+      /* Also send a concise summary to the live avatar if active */
+      if (r.data.accepted) {
+        sendToAvatar(
+          `The student's solution was accepted. They scored ${attempt?.score ?? activeQ.max_points} out of ${activeQ.max_points} points. Please congratulate them briefly and encourage them to continue.`
+        );
+      } else {
+        sendToAvatar(
+          `The student's submission was not accepted. Judge status: ${attempt?.judge0_status || "Wrong Answer"}. Score: ${attempt?.score ?? 0}/${activeQ.max_points}. ${attempt?.llm_feedback ? "Feedback: " + attempt.llm_feedback.slice(0, 200) : ""} Please give a brief, encouraging spoken hint.`
+        );
+      }
+
       const statsResp = await getMentorStats(token);
       if (statsResp.success) setStats(statsResp.data);
       await loadAttempts(session.id, activeQ.id);
@@ -401,10 +474,21 @@ export default function MentorPage() {
   /* ── avatar chat ───────────────────────────────────────────────────── */
   const sendChat = async () => {
     if (!chatInput.trim() || chatStreaming) return;
-    const userMsg: AvatarChatMessage = {
-      role: "user",
-      content: chatInput.trim(),
-    };
+    const text = chatInput.trim();
+    const userMsg: AvatarChatMessage = { role: "user", content: text };
+
+    // In avatar mode, send to the avatar (voice) and add user msg to chat
+    if (
+      mentorMode === "avatar" &&
+      avatarRef.current?.isReady
+    ) {
+      setChatHistory((prev) => [...prev, userMsg]);
+      setChatInput("");
+      avatarRef.current.sendMessage(text);
+      return;
+    }
+
+    // Text chat mode – stream from backend
     const newHistory = [...chatHistory, userMsg];
     setChatHistory(newHistory);
     setChatInput("");
@@ -492,33 +576,118 @@ export default function MentorPage() {
 
       {/* ── Body ─────────────────────────────────────────────── */}
       <div className="flex-1 flex min-h-0">
-        {/* ── Left Column: Avatar + Learning Path ─────────── */}
+        {/* ── Left Column: Avatar/Chat + Learning Path ─────────── */}
         <aside className="w-80 shrink-0 border-r border-zinc-800 flex flex-col">
-          {/* Avatar chat area */}
+          {/* Mode toggle + header */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400 text-sm font-bold">
-                  AI
+                  {mentorMode === "avatar" ? "🎥" : "AI"}
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-zinc-100">
                     Mentor
                   </div>
                   <div className="text-[10px] text-zinc-500">
-                    {chatStreaming ? "typing..." : "online"}
+                    {mentorMode === "avatar"
+                      ? avatarSessionToken
+                        ? "avatar live"
+                        : "avatar offline"
+                      : chatStreaming
+                        ? "typing..."
+                        : "online"}
                   </div>
                 </div>
               </div>
-              {session && (
-                <button
-                  onClick={() => setTheoryOpen(!theoryOpen)}
-                  className="text-[10px] px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 hover:border-orange-500 transition-colors"
-                >
-                  {theoryOpen ? "Hide" : "📖"} Theory
-                </button>
-              )}
+              <div className="flex items-center gap-1.5">
+                {/* Avatar / Chat toggle */}
+                {avatarAvailable && (
+                  <div className="flex bg-zinc-800 rounded-md border border-zinc-700 text-[10px] overflow-hidden">
+                    <button
+                      onClick={() => setMentorMode("chat")}
+                      className={`px-2 py-1 transition-colors ${
+                        mentorMode === "chat"
+                          ? "bg-orange-500/20 text-orange-400"
+                          : "text-zinc-400 hover:text-zinc-200"
+                      }`}
+                    >
+                      Chat
+                    </button>
+                    <button
+                      onClick={switchToAvatar}
+                      disabled={avatarLoading}
+                      className={`px-2 py-1 transition-colors ${
+                        mentorMode === "avatar"
+                          ? "bg-orange-500/20 text-orange-400"
+                          : "text-zinc-400 hover:text-zinc-200"
+                      } disabled:opacity-50`}
+                    >
+                      {avatarLoading ? "..." : "Avatar"}
+                    </button>
+                  </div>
+                )}
+                {session && (
+                  <button
+                    onClick={() => setTheoryOpen(!theoryOpen)}
+                    className="text-[10px] px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 hover:border-orange-500 transition-colors"
+                  >
+                    {theoryOpen ? "Hide" : "📖"} Theory
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Avatar video (shown when avatar mode active) */}
+            {mentorMode === "avatar" && (
+              <div className="px-3 pt-3 shrink-0">
+                {avatarSessionToken ? (
+                  <LiveAvatarMentor
+                    ref={avatarRef}
+                    sessionToken={avatarSessionToken}
+                    onDisconnected={stopAvatarSession}
+                    onUserTranscript={(text) => {
+                      setChatHistory((prev) => [
+                        ...prev,
+                        { role: "user", content: text },
+                      ]);
+                    }}
+                    onAvatarTranscript={(text) => {
+                      setChatHistory((prev) => [
+                        ...prev,
+                        { role: "assistant", content: text },
+                      ]);
+                    }}
+                  />
+                ) : (
+                  <div className="w-full aspect-video bg-zinc-900 rounded-lg border border-zinc-800 flex flex-col items-center justify-center gap-2">
+                    {avatarLoading ? (
+                      <>
+                        <div className="w-6 h-6 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-[10px] text-zinc-500">
+                          Starting avatar...
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-2xl">🎥</span>
+                        <button
+                          onClick={startAvatarSession}
+                          className="text-xs px-3 py-1 bg-orange-500 text-black rounded font-semibold hover:bg-orange-400 transition-colors"
+                        >
+                          Start Avatar
+                        </button>
+                        {avatarError && (
+                          <p className="text-[10px] text-red-400">
+                            {avatarError}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Chat messages */}
             <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 thin-scrollbar">

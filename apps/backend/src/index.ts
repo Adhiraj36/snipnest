@@ -4,6 +4,7 @@ import { PORT } from './config/env';
 import mentorRoutes from './routes/mentor';
 import notesRoutes from './routes/notes';
 import usersRoutes from './routes/users';
+import avatarRoutes from './routes/avatar';
 
 // ---------------------------------------------------------------------------
 // Express app
@@ -41,6 +42,7 @@ app.get('/health', (_req, res) => {
 app.use('/mentor', mentorRoutes);
 app.use('/notes', notesRoutes);
 app.use('/users', usersRoutes);
+app.use('/avatar', avatarRoutes);
 
 // ---------------------------------------------------------------------------
 // Startup

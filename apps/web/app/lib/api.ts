@@ -339,3 +339,46 @@ export async function streamAvatarChat(
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Avatar (HeyGen LiveAvatar)
+// ---------------------------------------------------------------------------
+
+export async function getAvatarConfig(token: string): Promise<ApiResult<{ available: boolean; isSandbox: boolean }>> {
+    try {
+        const resp = await api.get('/avatar/config', {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return { success: true, data: resp.data as { available: boolean; isSandbox: boolean } };
+    } catch (err: any) {
+        return { success: false, error: err?.message || String(err) };
+    }
+}
+
+export async function getAvatarSessionToken(
+    token: string,
+    opts?: { pushToTalk?: boolean }
+): Promise<ApiResult<{ session_token: string; session_id: string }>> {
+    try {
+        const resp = await api.post('/avatar/session-token', opts || {}, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return { success: true, data: resp.data as { session_token: string; session_id: string } };
+    } catch (err: any) {
+        return { success: false, error: err?.response?.data?.error || err?.message || String(err) };
+    }
+}
+
+export async function stopAvatarSession(
+    token: string,
+    sessionToken: string
+): Promise<ApiResult<{ success: boolean }>> {
+    try {
+        const resp = await api.post('/avatar/stop', { session_token: sessionToken }, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return { success: true, data: resp.data as { success: boolean } };
+    } catch (err: any) {
+        return { success: false, error: err?.message || String(err) };
+    }
+}
