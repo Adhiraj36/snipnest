@@ -1,8 +1,12 @@
 import 'dotenv/config';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import pg from 'pg';
 
-const sqlite = new Database(process.env.DATABASE_URL || './db/local.db');
-const db = drizzle(sqlite);
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
+
+const db = drizzle(pool);
 
 export default db;

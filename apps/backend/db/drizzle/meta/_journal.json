@@ -15,6 +15,13 @@
       "when": 1772116958938,
       "tag": "0001_lowly_clint_barton",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772217375544,
+      "tag": "0002_unusual_bushwacker",
+      "breakpoints": true
     }
   ]
 }

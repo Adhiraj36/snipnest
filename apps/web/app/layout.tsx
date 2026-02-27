@@ -20,7 +20,7 @@ const geistMono = localFont({
  */
 const clerkAppearanceObject = {
   cssLayerName: "clerk",
-  variables: { colorPrimary: "#000000" },
+  variables: { colorPrimary: "#f97316" },
   elements: {
     socialButtonsBlockButton:
       "bg-white border-gray-200 hover:bg-transparent hover:border-black text-gray-600 hover:text-black",
@@ -29,7 +29,7 @@ const clerkAppearanceObject = {
       "bg-white border border-solid border-gray-200 hover:bg-transparent hover:border-black text-gray-500 hover:text-black",
     membersPageInviteButton:
       "bg-black border border-black border-solid hover:bg-white hover:text-black",
-    card: "bg-[#fafafa]",
+    card: "bg-zinc-900 border border-zinc-800 text-zinc-100",
   },
 } satisfies Appearance;
 

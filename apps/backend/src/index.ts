@@ -1,42 +1,25 @@
 import express from 'express';
 import cors from 'cors';
-import type { Notes } from '@repo/shared-types';
-import { nanoid } from 'nanoid';
-import verifyToken from './middleware';
-import { createClerkClient } from '@clerk/clerk-sdk-node';
-import { CLERK_API_KEY } from './secrets';
-import { CreateNote, GetUserNotes } from './helpers/notes';
+import { PORT } from './config/env';
+import mentorRoutes from './routes/mentor';
+import notesRoutes from './routes/notes';
+import usersRoutes from './routes/users';
 
-// initialize a Clerk client with API key from env
-const clerkClient = createClerkClient({  secretKey: CLERK_API_KEY });
+// ---------------------------------------------------------------------------
+// Express app
+// ---------------------------------------------------------------------------
 
 const app = express();
 
-// parse JSON bodies for POST/PUT requests
 app.use(express.json());
 
-// enable CORS with proper handling for credentials
 const corsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
-    // In non-production, allow any origin to avoid local dev CORS issues
-    if (process.env.NODE_ENV !== 'production') {
-      callback(null, true);
-      return;
-    }
+    if (process.env.NODE_ENV !== 'production') return callback(null, true);
 
-    const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
-      .split(',')
-      .map((value) => value.trim())
-      .filter(Boolean);
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS not allowed'));
-    }
+    const allowed = (process.env.ALLOWED_ORIGINS || '').split(',').map((v) => v.trim()).filter(Boolean);
+    allowed.includes(origin) ? callback(null, true) : callback(new Error('CORS not allowed'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
@@ -45,63 +28,23 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-// respond to preflight requests for any route
 app.options('*', cors(corsOptions));
 
-const PORT = process.env.PORT || 9000;
+// ---------------------------------------------------------------------------
+// Routes
+// ---------------------------------------------------------------------------
 
-app.get('/health', (req, res) => {
-  res.send({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-  });
-});
-app.post('/notes', verifyToken, async(req,res)=>{
-    if (!req.verified || typeof req.verified === 'string' || !('id' in req.verified)) {
-     return res.status(401).send({ error: 'Unauthorized' });
-   }
-   const userId = req.verified.id;
-   type notesreq={
-    title:string;
-    content:string;
-   }
-   const {title, content}=req.body as notesreq;
-   const note: Notes = {
-    id:nanoid(),
-    user_id:userId,
-    title,
-    content,
-    created_at: new Date(),
-    updated_at: new Date()
-   }
-   const response = await CreateNote(note)
-    return res.status(201).send(response)
-})
-app.get('/notes', verifyToken, async (req, res) => {
-   if (!req.verified || typeof req.verified === 'string' || !('id' in req.verified)) {
-     return res.status(401).send({ error: 'Unauthorized' });
-   }
-   const userId = req.verified.id;
-
-   const notes = await GetUserNotes(userId)
-   return res.status(200).json(notes || []);
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// expose an endpoint to fetch users from Clerk
-app.get('/users/me', verifyToken, async (req, res) => {
-    if (!req.verified || typeof req.verified === 'string' || !('id' in req.verified)) {
-     return res.status(401).send({ error: 'Unauthorized' });
-   }
-   const userId = req.verified.id;
-  try {
-    const users = await clerkClient.users.getUser(userId);
-    return res.status(200).json(users);
-  } catch (err) {
-    console.error('Failed to fetch users from Clerk', err);
-    return res.status(500).json({ error: 'Failed to fetch users' });
-  }
-});
+app.use('/mentor', mentorRoutes);
+app.use('/notes', notesRoutes);
+app.use('/users', usersRoutes);
+
+// ---------------------------------------------------------------------------
+// Startup
+// ---------------------------------------------------------------------------
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
