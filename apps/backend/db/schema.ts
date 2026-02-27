@@ -1,11 +1,12 @@
-import { pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 
-export const notes = pgTable("notes", {
-  id: varchar("id").primaryKey(),
-  user_id: varchar("user_id").default(""),
-  name: varchar("name").default(""),
-  title: varchar("title").default(""),
-  content: varchar("content").default(""),
-  created_at: timestamp("created_at").defaultNow(),
-  updated_at: timestamp("updated_at").defaultNow()
+export const notes = sqliteTable("notes", {
+  id: text("id").primaryKey(),
+  user_id: text("user_id").default(""),
+  name: text("name").default(""),
+  title: text("title").default(""),
+  content: text("content").default(""),
+  created_at: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  updated_at: integer("updated_at", { mode: 'timestamp' }).default(sql`(unixepoch())`)
 });

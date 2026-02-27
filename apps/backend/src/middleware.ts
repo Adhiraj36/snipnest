@@ -1,7 +1,9 @@
 import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
-import { SECRET } from "./secrets";
+import { createClerkClient } from "@clerk/clerk-sdk-node";
+import { CLERK_API_KEY } from "./secrets";
 import { UserClaims } from "./types";
+
+const clerkClient = createClerkClient({ secretKey: CLERK_API_KEY });
 
 declare global {
   namespace Express {
@@ -20,13 +22,12 @@ export default async function verifyToken(req: Request, res: Response, next: Nex
   const token = auth.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, SECRET);
-    if (!decoded || typeof decoded === 'string') {
+    // Verify the session token using Clerk
+    const verified = await clerkClient.verifyToken(token);
+    if (!verified || !verified.sub) {
       return res.status(403).json({ error: "Invalid token" });
     }
-    // the token payload includes `sub` which is the Clerk user id
-    const userId = (decoded as any).sub || (decoded as any).id || '';
-    req.verified = { id: userId } as UserClaims;
+    req.verified = { id: verified.sub } as UserClaims;
     next();
   } catch (err) {
     console.error('token verification failed', err);

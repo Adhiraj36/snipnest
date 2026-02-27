@@ -1,10 +1,8 @@
 import 'dotenv/config';
-import { drizzle } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
 import { Notes } from '../types';
 import { notes } from '../../db/schema';
-
-const db = drizzle(process.env.DATABASE_URL!);
+import db from '../../db/index';
 
 export const CreateNote = async (note: Notes) => {
     try {
