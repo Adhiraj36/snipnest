@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -62,6 +62,14 @@ function ChatBubble({
 /* ─── Mentor Page ──────────────────────────────────────────────────────────── */
 
 export default function MentorPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center bg-zinc-950 text-zinc-400">Loading…</div>}>
+      <MentorPageInner />
+    </Suspense>
+  );
+}
+
+function MentorPageInner() {
   const { getToken, isLoaded } = useAuth();
   const { user } = useUser();
   const searchParams = useSearchParams();
