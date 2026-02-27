@@ -6,10 +6,10 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "NODE_TLS_REJECT_UNAUTHORIZED=0 ts-node-dev --respawn --transpile-only src/index.ts",
-    "db:generate": "bunx drizzle-kit generate",
-    "db:migrate": "NODE_TLS_REJECT_UNAUTHORIZED=0 bunx drizzle-kit migrate",
-    "db:browser": "bunx drizzle-kit studio --host=0.0.0.0"
+    "dev": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 ts-node-dev --respawn --transpile-only src/index.ts",
+    "db:generate": "npx drizzle-kit generate",
+    "db:migrate": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 npx drizzle-kit migrate",
+    "db:browser": "npx drizzle-kit studio --host=0.0.0.0"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^5.1.6",
