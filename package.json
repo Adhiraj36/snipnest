@@ -20,5 +20,11 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "dependencies": {
+    "@clerk/clerk-sdk-node": "^5.1.6",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "nanoid": "^5.1.6"
+  }
 }
