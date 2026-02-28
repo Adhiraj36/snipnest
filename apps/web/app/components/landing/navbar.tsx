@@ -8,7 +8,6 @@ import { DarkModeToggle } from "../ui/dark-mode-toggle";
 
 const navLinks = [
   { href: "#features", label: "Features" },
-  { href: "#pricing", label: "Pricing" },
   { href: "#contact", label: "Contact" },
 ];
 
@@ -26,7 +25,7 @@ export function Navbar() {
         <Link href="/" className="flex items-center gap-2.5 group">
           <div
             className="flex h-9 w-9 items-center justify-center rounded-xl
-                        bg-gradient-to-br from-blue-500 to-indigo-600 text-white
+                        bg-gradient-to-br from-orange-500 to-orange-600 text-white
                         shadow-[var(--shadow-md)] transition-transform duration-200
                         group-hover:scale-105"
           >
@@ -60,7 +59,7 @@ export function Navbar() {
             <Link
               href="/dashboard"
               className="hidden sm:inline-flex px-4 py-2 text-sm font-semibold rounded-xl
-                         bg-gradient-to-r from-blue-500 to-indigo-600 text-white
+                         bg-gradient-to-r from-orange-500 to-orange-600 text-white
                          shadow-[var(--shadow-md)] transition-all duration-200
                          hover:shadow-[var(--shadow-lg)] hover:-translate-y-0.5"
             >

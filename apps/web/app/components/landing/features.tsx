@@ -15,69 +15,69 @@ const features = [
     title: "AI Mentor",
     description:
       "Get personalized guidance from an AI that adapts to your skill level and learning pace.",
-    color: "blue",
+    color: "orange",
   },
   {
     icon: Code2,
     title: "In-Browser Editor",
     description:
       "Write, run, and test code directly in a full-featured Monaco editor — no local setup needed.",
-    color: "indigo",
+    color: "amber",
   },
   {
     icon: LineChart,
     title: "Progress Tracking",
     description:
       "Earn XP, unlock badges, and track your growth across topics with detailed analytics.",
-    color: "emerald",
+    color: "yellow",
   },
   {
     icon: BookOpen,
     title: "Structured Curriculum",
     description:
       "Follow curated learning paths that cover theory and hands-on practice for every topic.",
-    color: "violet",
+    color: "zinc",
   },
   {
     icon: Zap,
     title: "Instant Feedback",
     description:
       "Get real-time code evaluation and hints so you never stay stuck for long.",
-    color: "amber",
+    color: "stone",
   },
   {
     icon: Shield,
     title: "Safe Sandbox",
     description:
       "Code executes in secure, isolated environments — experiment freely without risk.",
-    color: "rose",
+    color: "warm",
   },
 ] as const;
 
 const colorMap: Record<string, { bg: string; icon: string }> = {
-  blue: {
-    bg: "bg-blue-100 dark:bg-blue-900/30",
-    icon: "text-blue-600 dark:text-blue-400",
-  },
-  indigo: {
-    bg: "bg-indigo-100 dark:bg-indigo-900/30",
-    icon: "text-indigo-600 dark:text-indigo-400",
-  },
-  emerald: {
-    bg: "bg-emerald-100 dark:bg-emerald-900/30",
-    icon: "text-emerald-600 dark:text-emerald-400",
-  },
-  violet: {
-    bg: "bg-violet-100 dark:bg-violet-900/30",
-    icon: "text-violet-600 dark:text-violet-400",
+  orange: {
+    bg: "bg-orange-900/25",
+    icon: "text-orange-400",
   },
   amber: {
-    bg: "bg-amber-100 dark:bg-amber-900/30",
-    icon: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-900/25",
+    icon: "text-amber-400",
   },
-  rose: {
-    bg: "bg-rose-100 dark:bg-rose-900/30",
-    icon: "text-rose-600 dark:text-rose-400",
+  yellow: {
+    bg: "bg-yellow-900/25",
+    icon: "text-yellow-400",
+  },
+  zinc: {
+    bg: "bg-zinc-800/50",
+    icon: "text-zinc-300",
+  },
+  stone: {
+    bg: "bg-stone-800/40",
+    icon: "text-stone-300",
+  },
+  warm: {
+    bg: "bg-orange-950/30",
+    icon: "text-orange-300",
   },
 };
 
@@ -96,7 +96,7 @@ export function Features() {
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--color-text)]">
             Everything you need to
-            <span className="bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
               {" "}level up
             </span>
           </h2>
@@ -115,7 +115,7 @@ export function Features() {
               <article
                 key={feat.title}
                 className="group relative rounded-2xl border border-[var(--color-border)]
-                           bg-[var(--color-bg-card)] p-7 shadow-[var(--shadow-sm)]
+                           glass p-7 shadow-[var(--shadow-sm)]
                            transition-all duration-300
                            hover:shadow-[var(--shadow-lg)] hover:-translate-y-1"
               >

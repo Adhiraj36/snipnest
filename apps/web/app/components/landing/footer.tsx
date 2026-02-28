@@ -15,12 +15,12 @@ export function Footer() {
             <div className="flex items-center gap-2.5 mb-4">
               <div
                 className="flex h-9 w-9 items-center justify-center rounded-xl
-                            bg-gradient-to-br from-blue-500 to-indigo-600 text-white"
+                            bg-gradient-to-br from-orange-500 to-orange-600 text-white"
               >
                 <GraduationCap className="h-5 w-5" />
               </div>
               <span className="text-lg font-bold text-[var(--color-text)]">
-                SnipNest
+                Code Sarthi
               </span>
             </div>
             <p className="text-sm text-[var(--color-text-muted)] leading-relaxed max-w-xs">
@@ -32,7 +32,7 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-[var(--color-text)] mb-4">Product</h4>
             <ul className="space-y-2.5">
-              {["Features", "Pricing", "Changelog", "Roadmap"].map((item) => (
+              {["Features", "Changelog", "Roadmap"].map((item) => (
                 <li key={item}>
                   <a
                     href={`#${item.toLowerCase()}`}
@@ -97,7 +97,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-14 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-[var(--color-text-muted)]">
-            &copy; {new Date().getFullYear()} SnipNest. All rights reserved.
+            &copy; {new Date().getFullYear()} Code Sarthi. All rights reserved.
           </p>
           <div className="flex gap-6">
             {["Privacy", "Terms", "Cookies"].map((item) => (
