@@ -210,9 +210,21 @@ function MentorPageInner() {
   );
   const lang = (() => {
     const id = session?.interest_id || selectedInterest;
-    if (id === "python") return "python";
-    if (id === "cpp") return "cpp";
-    return "javascript";
+    const langMap: Record<string, string> = {
+      javascript: "javascript",
+      typescript: "typescript",
+      python: "python",
+      cpp: "cpp",
+      java: "java",
+      c: "c",
+      go: "go",
+      rust: "rust",
+      ruby: "ruby",
+      csharp: "csharp",
+      kotlin: "kotlin",
+      sql: "sql",
+    };
+    return langMap[id] || "javascript";
   })();
   const visibleAttempts = attempts.filter(
     (a) => a.judge0_status.toLowerCase() !== "generated"

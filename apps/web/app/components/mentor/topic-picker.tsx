@@ -16,18 +16,27 @@ import {
   Database,
   FileCode,
   GraduationCap,
+  Hash,
+  Gem,
+  Zap,
+  Shield,
+  Binary,
 } from "lucide-react";
 
 /* ─── Icon map for interests ──────────────────────────────────────────────── */
 
 const interestIcons: Record<string, React.ReactNode> = {
   javascript: <Braces className="h-7 w-7" />,
+  typescript: <FileCode className="h-7 w-7" />,
   python: <Terminal className="h-7 w-7" />,
   cpp: <Cpu className="h-7 w-7" />,
-  typescript: <FileCode className="h-7 w-7" />,
   java: <Code2 className="h-7 w-7" />,
+  c: <Binary className="h-7 w-7" />,
   go: <Globe className="h-7 w-7" />,
-  rust: <Layers className="h-7 w-7" />,
+  rust: <Shield className="h-7 w-7" />,
+  ruby: <Gem className="h-7 w-7" />,
+  csharp: <Hash className="h-7 w-7" />,
+  kotlin: <Zap className="h-7 w-7" />,
   sql: <Database className="h-7 w-7" />,
 };
 
@@ -42,6 +51,12 @@ const accentColors = [
   { bg: "from-orange-400/20 to-red-500/5", border: "border-orange-400/30", text: "text-orange-300", glow: "shadow-orange-400/10" },
   { bg: "from-rose-500/20 to-rose-600/5", border: "border-rose-500/30", text: "text-rose-400", glow: "shadow-rose-500/10" },
   { bg: "from-red-500/20 to-red-600/5", border: "border-red-500/30", text: "text-red-400", glow: "shadow-red-500/10" },
+  { bg: "from-emerald-500/20 to-emerald-600/5", border: "border-emerald-500/30", text: "text-emerald-400", glow: "shadow-emerald-500/10" },
+  { bg: "from-sky-500/20 to-sky-600/5", border: "border-sky-500/30", text: "text-sky-400", glow: "shadow-sky-500/10" },
+  { bg: "from-violet-500/20 to-violet-600/5", border: "border-violet-500/30", text: "text-violet-400", glow: "shadow-violet-500/10" },
+  { bg: "from-pink-500/20 to-pink-600/5", border: "border-pink-500/30", text: "text-pink-400", glow: "shadow-pink-500/10" },
+  { bg: "from-cyan-500/20 to-cyan-600/5", border: "border-cyan-500/30", text: "text-cyan-400", glow: "shadow-cyan-500/10" },
+  { bg: "from-lime-500/20 to-lime-600/5", border: "border-lime-500/30", text: "text-lime-400", glow: "shadow-lime-500/10" },
 ];
 
 function getAccent(i: number) {
