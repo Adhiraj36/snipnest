@@ -2,7 +2,7 @@
 import axios from "axios";
 import type { InterestDomain, MentorQuestion, MentorSession, Notes, QuestionAttempt } from "@repo/shared-types";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://100.110.74.54:9000"
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:9000"
 
 const getBackendURL = () => {
     return BACKEND_URL;

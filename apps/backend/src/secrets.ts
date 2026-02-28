@@ -1,5 +1,5 @@
-// the JWT key from the Clerk template; store in env var in production
-export const SECRET = "APple_banana_3141592653589793_one_ppiece"; // use process.env in real apps
+// Re-export from env – kept for backward compatibility
+import 'dotenv/config';
 
-// Clerk API key for server SDK operations - must match the frontend Clerk instance
-export const CLERK_API_KEY = "sk_test_DAo7YyUM6rZQd13KuyiZ1iieSPhGVpiIXzfG7hobSN";
+export const SECRET = process.env.JWT_SECRET || '';
+export const CLERK_API_KEY = process.env.CLERK_SECRET_KEY || '';
