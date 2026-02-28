@@ -68,6 +68,8 @@ const LiveAvatarMentor = forwardRef<LiveAvatarMentorHandle, Props>(
     const [isStreamReady, setIsStreamReady] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [voiceChatActive, setVoiceChatActive] = useState(false);
+    const [voiceChatEnabled, setVoiceChatEnabled] = useState(false);
+    const [voiceChatLoading, setVoiceChatLoading] = useState(false);
     const [isAvatarTalking, setIsAvatarTalking] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const hasMediaDevices =
@@ -96,8 +98,9 @@ const LiveAvatarMentor = forwardRef<LiveAvatarMentorHandle, Props>(
     useEffect(() => {
       if (!sessionToken) return;
 
+      // Start WITHOUT voiceChat — user can enable mic after connection
       const session = new LiveAvatarSession(sessionToken, {
-        voiceChat: hasMediaDevices,
+        voiceChat: false,
       });
       sessionRef.current = session;
 
@@ -116,8 +119,8 @@ const LiveAvatarMentor = forwardRef<LiveAvatarMentorHandle, Props>(
         }
       });
 
-      /* Voice chat state (only available when mediaDevices exists) */
-      if (hasMediaDevices && session.voiceChat) {
+      /* Voice chat state listeners (will fire once voice chat is enabled) */
+      if (session.voiceChat) {
         session.voiceChat.on(VoiceChatEvent.MUTED, () => setIsMuted(true));
         session.voiceChat.on(VoiceChatEvent.UNMUTED, () => setIsMuted(false));
         session.voiceChat.on(VoiceChatEvent.STATE_CHANGED, (state: any) => {
@@ -179,6 +182,35 @@ const LiveAvatarMentor = forwardRef<LiveAvatarMentorHandle, Props>(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sessionToken]);
 
+    /* ── Enable voice chat on demand ─────────────────────────────── */
+    const enableVoiceChat = useCallback(async () => {
+      if (!sessionRef.current?.voiceChat || voiceChatEnabled) return;
+      setVoiceChatLoading(true);
+      setError(null);
+      try {
+        // Check for an actual audio input device first
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const hasMic = devices.some((d) => d.kind === "audioinput");
+        if (!hasMic) {
+          setError("No microphone found");
+          return;
+        }
+        await sessionRef.current.voiceChat.start();
+        setVoiceChatEnabled(true);
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        if (msg.includes("NotAllowedError") || msg.includes("Permission")) {
+          setError("Mic permission denied");
+        } else if (msg.includes("NotFoundError") || msg.includes("device")) {
+          setError("No microphone found");
+        } else {
+          setError("Failed to enable mic: " + msg);
+        }
+      } finally {
+        setVoiceChatLoading(false);
+      }
+    }, [voiceChatEnabled]);
+
     /* ── Voice controls ──────────────────────────────────────────── */
     const toggleMute = useCallback(async () => {
       if (!sessionRef.current?.voiceChat) return;
@@ -234,16 +266,25 @@ const LiveAvatarMentor = forwardRef<LiveAvatarMentorHandle, Props>(
         {/* Controls */}
         {connected && (
           <div className="flex items-center gap-2 w-full">
-            {hasMediaDevices && (
+            {hasMediaDevices && !voiceChatEnabled && (
+              <button
+                onClick={enableVoiceChat}
+                disabled={voiceChatLoading}
+                className="flex-1 text-xs py-1.5 rounded border border-zinc-700 bg-zinc-800 text-zinc-300 hover:border-orange-500 transition-colors disabled:opacity-50"
+              >
+                {voiceChatLoading ? "Enabling..." : "🎙️ Enable Mic"}
+              </button>
+            )}
+            {hasMediaDevices && voiceChatEnabled && (
               <button
                 onClick={toggleMute}
                 className={`flex-1 text-xs py-1.5 rounded border transition-colors ${
                   isMuted
                     ? "bg-red-500/15 border-red-500/30 text-red-400 hover:bg-red-500/25"
-                    : "bg-zinc-800 border-zinc-700 text-zinc-300 hover:border-orange-500"
+                    : "bg-green-500/15 border-green-500/30 text-green-400"
                 }`}
               >
-                {isMuted ? "🔇 Unmute Mic" : "🎙️ Mute Mic"}
+                {isMuted ? "🔇 Unmute Mic" : "🎙️ Mic On"}
               </button>
             )}
             {!hasMediaDevices && (
