@@ -314,12 +314,18 @@ function MentorPageInner() {
     }
   }, [avatarSessionToken, startAvatarSession]);
 
-  /** Pipe a text message to the live avatar (non-blocking, best-effort) */
+  /** Pipe a text message to the live avatar (non-blocking, best-effort, with retry) */
   const sendToAvatar = useCallback(
     (text: string) => {
-      if (mentorMode === "avatar" && avatarRef.current?.isReady) {
-        avatarRef.current.sendMessage(text);
-      }
+      if (mentorMode !== "avatar") return;
+      const trySend = (retries: number) => {
+        if (avatarRef.current?.isReady) {
+          avatarRef.current.sendMessage(text);
+        } else if (retries > 0) {
+          setTimeout(() => trySend(retries - 1), 1500);
+        }
+      };
+      trySend(3);
     },
     [mentorMode]
   );
@@ -342,9 +348,8 @@ function MentorPageInner() {
       );
     }
     if (editorCode.trim()) {
-      const lines = editorCode.trim().split("\n").length;
       parts.push(
-        `The student has written ${lines} lines of code so far.`
+        `The student's current code:\n${editorCode.slice(0, 1500)}`
       );
     }
     return parts.join(" ");
@@ -507,11 +512,11 @@ function MentorPageInner() {
       /* Also send a concise summary to the live avatar if active */
       if (r.data.accepted) {
         sendToAvatar(
-          `The student's solution was accepted. They scored ${attempt?.score ?? activeQ.max_points} out of ${activeQ.max_points} points. Please congratulate them briefly and encourage them to continue.`
+          `The student just submitted their code and it was accepted! They scored ${attempt?.score ?? activeQ.max_points} out of ${activeQ.max_points} points. Their submitted code:\n${submittedCode.slice(0, 1200)}\nPlease congratulate them briefly and encourage them to continue.`
         );
       } else {
         sendToAvatar(
-          `The student's submission was not accepted. Judge status: ${attempt?.judge0_status || "Wrong Answer"}. Score: ${attempt?.score ?? 0}/${activeQ.max_points}. ${attempt?.llm_feedback ? "Feedback: " + attempt.llm_feedback.slice(0, 200) : ""} Please give a brief, encouraging spoken hint.`
+          `The student just submitted their code but it was not accepted. Judge status: ${attempt?.judge0_status || "Wrong Answer"}. Score: ${attempt?.score ?? 0}/${activeQ.max_points}. ${attempt?.llm_feedback ? "Feedback: " + attempt.llm_feedback.slice(0, 200) : ""} Their submitted code:\n${submittedCode.slice(0, 1200)}\nPlease give a brief, encouraging spoken hint about what might be wrong.`
         );
       }
 
