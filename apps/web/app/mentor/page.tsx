@@ -29,6 +29,7 @@ import {
 import LiveAvatarMentor, {
   type LiveAvatarMentorHandle,
 } from "../components/LiveAvatarMentor";
+import { TopicPicker } from "../components/mentor/topic-picker";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
@@ -380,9 +381,11 @@ function MentorPageInner() {
   }, [mentorMode, activeQ?.id, buildSpokenContext]);
 
   /* ── create session (streaming) ────────────────────────────────────── */
-  const createSession = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedInterest || !selectedSubDomain || !selectedTopic) return;
+  const createSession = async (interestId: string, subDomainId: string, topicId: string) => {
+    if (!interestId || !subDomainId || !topicId) return;
+    setSelectedInterest(interestId);
+    setSelectedSubDomain(subDomainId);
+    setSelectedTopic(topicId);
     setError(null);
     setResultMessage("");
     setStreamingTheory("");
@@ -397,9 +400,9 @@ function MentorPageInner() {
       await startMentorSessionStream(
         token,
         {
-          interestId: selectedInterest,
-          subDomainId: selectedSubDomain,
-          topicId: selectedTopic,
+          interestId: interestId,
+          subDomainId: subDomainId,
+          topicId: topicId,
           questionCount: 5,
         },
         {
@@ -602,21 +605,23 @@ function MentorPageInner() {
 
   /* ─── Render ───────────────────────────────────────────────────────── */
   return (
-    <div className="h-screen flex flex-col bg-zinc-950 text-zinc-100 overflow-hidden">
+    <div className="h-screen flex flex-col landing-bg overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────── */}
-      <header className="flex items-center justify-between px-5 py-3 border-b border-zinc-800 shrink-0">
+      <header className="flex items-center justify-between px-5 py-3 glass border-b border-[var(--color-border)] shrink-0 z-10">
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard"
-            className="text-zinc-400 hover:text-orange-400 text-sm transition-colors"
+            className="text-[var(--color-text-muted)] hover:text-orange-400 text-sm transition-colors"
           >
             ← Dashboard
           </Link>
-          <h1 className="text-xl font-bold text-orange-400">Mentor Session</h1>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+            Mentor Session
+          </h1>
         </div>
         <div className="flex items-center gap-3 text-sm">
           {stats && (
-            <div className="flex gap-3 mr-4 text-zinc-400">
+            <div className="flex gap-3 mr-4 text-[var(--color-text-muted)]">
               <span>
                 <span className="text-orange-400 font-bold">
                   {stats.totalPoints}
@@ -631,28 +636,37 @@ function MentorPageInner() {
               </span>
             </div>
           )}
-          <span className="text-zinc-300 text-xs">
+          <span className="text-[var(--color-text-muted)] text-xs">
             {user?.firstName || user?.fullName}
           </span>
         </div>
       </header>
 
       {/* ── Body ─────────────────────────────────────────────── */}
+      {!session ? (
+        /* ── Full-screen topic picker ─────────────────────── */
+        <TopicPicker
+          catalog={catalog}
+          loading={loading}
+          streamPhase={streamPhase}
+          onStart={createSession}
+        />
+      ) : (
       <div className="flex-1 flex min-h-0">
         {/* ── Left Column: Avatar/Chat + Learning Path ─────────── */}
-        <aside className="w-80 shrink-0 border-r border-zinc-800 flex flex-col">
+        <aside className="w-80 shrink-0 border-r border-[var(--color-border)] flex flex-col">
           {/* Mode toggle + header */}
           <div className="flex-1 flex flex-col min-h-0">
-            <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+            <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400 text-sm font-bold">
                   {mentorMode === "avatar" ? "🎥" : "AI"}
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-zinc-100">
+                  <div className="text-sm font-semibold text-[var(--color-text)]">
                     Mentor
                   </div>
-                  <div className="text-[10px] text-zinc-500">
+                  <div className="text-[10px] text-[var(--color-text-muted)]">
                     {mentorMode === "avatar"
                       ? avatarSessionToken
                         ? "avatar live"
@@ -666,13 +680,13 @@ function MentorPageInner() {
               <div className="flex items-center gap-1.5">
                 {/* Avatar / Chat toggle */}
                 {avatarAvailable && (
-                  <div className="flex bg-zinc-800 rounded-md border border-zinc-700 text-[10px] overflow-hidden">
+                  <div className="flex bg-zinc-800/60 rounded-md border border-[var(--color-border)] text-[10px] overflow-hidden">
                     <button
                       onClick={() => setMentorMode("chat")}
                       className={`px-2 py-1 transition-colors ${
                         mentorMode === "chat"
                           ? "bg-orange-500/20 text-orange-400"
-                          : "text-zinc-400 hover:text-zinc-200"
+                          : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                       }`}
                     >
                       Chat
@@ -683,7 +697,7 @@ function MentorPageInner() {
                       className={`px-2 py-1 transition-colors ${
                         mentorMode === "avatar"
                           ? "bg-orange-500/20 text-orange-400"
-                          : "text-zinc-400 hover:text-zinc-200"
+                          : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                       } disabled:opacity-50`}
                     >
                       {avatarLoading ? "..." : "Avatar"}
@@ -693,7 +707,7 @@ function MentorPageInner() {
                 {session && (
                   <button
                     onClick={() => setTheoryOpen(!theoryOpen)}
-                    className="text-[10px] px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 hover:border-orange-500 transition-colors"
+                    className="text-[10px] px-2 py-1 rounded glass border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-orange-500/50 transition-colors cursor-pointer"
                   >
                     {theoryOpen ? "Hide" : "📖"} Theory
                   </button>
@@ -723,11 +737,11 @@ function MentorPageInner() {
                     }}
                   />
                 ) : (
-                  <div className="w-full aspect-video bg-zinc-900 rounded-lg border border-zinc-800 flex flex-col items-center justify-center gap-2">
+                  <div className="w-full aspect-video glass rounded-lg border border-[var(--color-border)] flex flex-col items-center justify-center gap-2">
                     {avatarLoading ? (
                       <>
                         <div className="w-6 h-6 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
-                        <span className="text-[10px] text-zinc-500">
+                        <span className="text-[10px] text-[var(--color-text-muted)]">
                           Starting avatar...
                         </span>
                       </>
@@ -755,13 +769,13 @@ function MentorPageInner() {
             {/* Chat messages */}
             <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 thin-scrollbar">
               {chatHistory.length === 0 && !session && (
-                <div className="text-center text-zinc-500 text-sm mt-8">
+                <div className="text-center text-[var(--color-text-muted)] text-sm mt-8">
                   <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center">
                     <span className="text-2xl">🎓</span>
                   </div>
                   <p>Select a topic and start a session.</p>
-                  <p className="text-xs mt-1 text-zinc-600">
-                    I'll explain theory, guide your solving, and score your
+                  <p className="text-xs mt-1 text-[var(--color-text-muted)]">
+                    I&apos;ll explain theory, guide your solving, and score your
                     work.
                   </p>
                 </div>
@@ -789,12 +803,15 @@ function MentorPageInner() {
                     }
                     placeholder="Ask the mentor..."
                     disabled={chatStreaming}
-                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500 disabled:opacity-50"
+                    className="flex-1 glass border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm
+                               text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]
+                               focus:outline-none focus:border-orange-500/50 disabled:opacity-50"
                   />
                   <button
                     onClick={sendChat}
                     disabled={chatStreaming || !chatInput.trim()}
-                    className="px-3 py-2 bg-orange-500 text-black rounded-lg text-sm font-semibold hover:bg-orange-400 disabled:opacity-50 transition-colors"
+                    className="px-3 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg text-sm font-semibold
+                               hover:shadow-[0_4px_16px_rgba(249,115,22,0.3)] disabled:opacity-50 transition-all cursor-pointer"
                   >
                     ↑
                   </button>
@@ -803,67 +820,16 @@ function MentorPageInner() {
             )}
           </div>
 
-          {/* Learning Path selector */}
-          {!session && (
-            <div className="border-t border-zinc-800 p-4 space-y-3 shrink-0">
-              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                Learning Path
-              </h3>
-              <form onSubmit={createSession} className="space-y-2">
-                <select
-                  value={selectedInterest}
-                  onChange={(e) => onInterestChange(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-sm"
-                >
-                  {catalog.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={selectedSubDomain}
-                  onChange={(e) => onSubDomainChange(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-sm"
-                >
-                  {(interestObj?.subDomains || []).map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={selectedTopic}
-                  onChange={(e) => setSelectedTopic(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-sm"
-                >
-                  {(subDomainObj?.topics || []).map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="submit"
-                  disabled={!user || loading}
-                  className="w-full bg-orange-500 text-black font-semibold py-2 rounded text-sm hover:bg-orange-400 disabled:opacity-50 transition-colors"
-                >
-                  {loading ? streamPhase || "Generating..." : "Start Session"}
-                </button>
-              </form>
-            </div>
-          )}
-
           {/* Session info when active */}
           {session && (
-            <div className="border-t border-zinc-800 p-4 shrink-0 space-y-2">
-              <div className="flex justify-between text-xs text-zinc-400">
+            <div className="border-t border-[var(--color-border)] p-4 shrink-0 space-y-2">
+              <div className="flex justify-between text-xs text-[var(--color-text-muted)]">
                 <span>{session.interest_id} / {session.topic_id}</span>
                 <span className={session.status === "completed" ? "text-green-400" : "text-orange-400"}>
                   {session.status}
                 </span>
               </div>
-              <div className="text-xs text-zinc-500">
+              <div className="text-xs text-[var(--color-text-muted)]">
                 Session pts: <span className="text-orange-400 font-bold">{session.points_earned}</span>
               </div>
             </div>
@@ -872,38 +838,11 @@ function MentorPageInner() {
 
         {/* ── Right Column: Question + Editor ─────────────── */}
         <main className="flex-1 flex flex-col min-h-0 relative">
-          {!session ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center space-y-3 max-w-md">
-                <div className="text-5xl">👨‍💻</div>
-                <h2 className="text-xl font-semibold text-zinc-200">
-                  Ready to practice?
-                </h2>
-                <p className="text-sm text-zinc-400">
-                  Pick a language, subdomain, and topic from the sidebar. The
-                  AI mentor will stream theory and coding questions for you.
-                </p>
-                {streamingTheory && (
-                  <div className="text-left mt-4 bg-zinc-900 border border-zinc-800 rounded-lg p-4 max-h-48 overflow-y-auto">
-                    <p className="text-xs text-zinc-500 mb-2">
-                      Streaming theory...
-                    </p>
-                    <div className="prose prose-sm prose-invert max-w-none">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {streamingTheory}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <>
               {/* Question bar */}
-              <div className="px-5 py-3 border-b border-zinc-800 shrink-0">
+              <div className="px-5 py-3 border-b border-[var(--color-border)] shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="shrink-0 text-xs font-mono px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400">
+                    <span className="shrink-0 text-xs font-mono px-2 py-0.5 rounded-full glass border border-[var(--color-border)] text-[var(--color-text-muted)]">
                       Q{(session.current_question_index ?? 0) + 1}/
                       {questions.length}
                     </span>
@@ -925,12 +864,12 @@ function MentorPageInner() {
                         {activeQ?.max_points ?? 10}
                       </span>
                     )}
-                    <p className="text-sm text-zinc-200 truncate">
+                    <p className="text-sm text-[var(--color-text)] truncate">
                       {activeQ?.prompt || "Session complete."}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 ml-3 shrink-0">
-                    <span className="text-xs text-zinc-500">
+                    <span className="text-xs text-[var(--color-text-muted)]">
                       <span className="text-orange-400 font-bold">
                         {session.points_earned}
                       </span>{" "}
@@ -939,7 +878,7 @@ function MentorPageInner() {
                   </div>
                 </div>
                 {activeQ && activeQ.prompt.length > 80 && (
-                  <p className="mt-2 text-sm text-zinc-300 leading-relaxed">
+                  <p className="mt-2 text-sm text-[var(--color-text-muted)] leading-relaxed">
                     {activeQ.prompt}
                   </p>
                 )}
@@ -968,14 +907,14 @@ function MentorPageInner() {
               </div>
 
               {/* Action bar */}
-              <div className="px-5 py-3 border-t border-zinc-800 shrink-0 flex items-center justify-between">
+              <div className="px-5 py-3 border-t border-[var(--color-border)] shrink-0 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {resultMessage && (
                     <span
                       className={`text-xs px-3 py-1 rounded-full ${
                         resultMessage.includes("Accepted")
                           ? "bg-green-500/15 text-green-400 border border-green-500/30"
-                          : "bg-zinc-800 text-zinc-300 border border-zinc-700"
+                          : "glass text-[var(--color-text-muted)] border border-[var(--color-border)]"
                       }`}
                     >
                       {resultMessage}
@@ -988,24 +927,24 @@ function MentorPageInner() {
                 <div className="flex items-center gap-2">
                   {visibleAttempts.length > 0 && (
                     <details className="relative">
-                      <summary className="text-xs text-zinc-400 cursor-pointer hover:text-zinc-200 px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded transition-colors">
+                      <summary className="text-xs text-[var(--color-text-muted)] cursor-pointer hover:text-[var(--color-text)] px-3 py-1.5 glass border border-[var(--color-border)] rounded transition-colors">
                         Attempts ({visibleAttempts.length})
                       </summary>
-                      <div className="absolute bottom-full right-0 mb-2 w-96 max-h-72 overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl p-3 space-y-2 z-50">
+                      <div className="absolute bottom-full right-0 mb-2 w-96 max-h-72 overflow-y-auto glass border border-[var(--color-border)] rounded-lg shadow-xl p-3 space-y-2 z-50">
                         {visibleAttempts.map((a) => (
                           <div
                             key={a.id}
-                            className="border border-zinc-800 rounded p-2 bg-zinc-950 space-y-1"
+                            className="border border-[var(--color-border)] rounded p-2 glass space-y-1"
                           >
                             <div className="flex justify-between text-[11px]">
-                              <span className="text-zinc-400">
+                              <span className="text-[var(--color-text-muted)]">
                                 {new Date(a.created_at).toLocaleString()}
                               </span>
                               <span className="text-orange-400 font-semibold">
                                 {a.judge0_status} · {a.score} pts
                               </span>
                             </div>
-                            <p className="text-xs text-zinc-300">
+                            <p className="text-xs text-[var(--color-text-muted)]">
                               {a.llm_feedback}
                             </p>
                             {a.stderr && (
@@ -1025,30 +964,31 @@ function MentorPageInner() {
                       submitting ||
                       session.status === "completed"
                     }
-                    className="px-5 py-2 bg-orange-500 text-black rounded font-semibold text-sm hover:bg-orange-400 disabled:opacity-50 transition-colors"
+                    className="px-5 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-semibold text-sm
+                               shadow-[0_4px_16px_rgba(249,115,22,0.25)]
+                               hover:shadow-[0_6px_24px_rgba(249,115,22,0.35)] hover:-translate-y-0.5
+                               disabled:opacity-50 transition-all cursor-pointer"
                   >
                     {submitting ? "Running..." : "Run & Submit"}
                   </button>
-                </div>
               </div>
-            </>
-          )}
+            </div>
 
           {/* ── Theory slide-over with Markdown rendering ─── */}
           {theoryOpen && session && (
             <div className="absolute inset-0 z-40 flex">
               <div
-                className="absolute inset-0 bg-black/50"
+                className="absolute inset-0 bg-black/60"
                 onClick={() => setTheoryOpen(false)}
               />
-              <div className="relative ml-auto w-[48rem] max-w-[85%] h-full bg-zinc-900 border-l border-zinc-700 shadow-2xl flex flex-col">
-                <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800">
-                  <h3 className="font-semibold text-zinc-100">
+              <div className="relative ml-auto w-[48rem] max-w-[85%] h-full glass border-l border-[var(--color-border)] shadow-2xl flex flex-col">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--color-border)]">
+                  <h3 className="font-semibold text-[var(--color-text)]">
                     Theory — {session.topic_id}
                   </h3>
                   <button
                     onClick={() => setTheoryOpen(false)}
-                    className="text-zinc-400 hover:text-zinc-100 text-lg"
+                    className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-lg cursor-pointer"
                   >
                     ✕
                   </button>
@@ -1068,6 +1008,7 @@ function MentorPageInner() {
           )}
         </main>
       </div>
+      )}
     </div>
   );
 }
