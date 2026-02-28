@@ -101,6 +101,7 @@ function MentorPageInner() {
   const [streamingTheory, setStreamingTheory] = useState("");
   const [streamPhase, setStreamPhase] = useState("");
   const [theoryOpen, setTheoryOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(true);
 
   /* avatar chat */
   const [chatHistory, setChatHistory] = useState<AvatarChatMessage[]>([]);
@@ -712,7 +713,18 @@ function MentorPageInner() {
       ) : (
       <div className="flex-1 flex min-h-0">
         {/* ── Left Column: Avatar/Chat + Learning Path ─────────── */}
-        <aside className="w-80 shrink-0 border-r border-[var(--color-border)] flex flex-col">
+        {chatOpen ? (
+        <aside className="w-80 shrink-0 border-r border-[var(--color-border)] flex flex-col relative">
+          {/* Close button */}
+          <button
+            onClick={() => setChatOpen(false)}
+            className="absolute top-2 right-2 z-10 w-6 h-6 flex items-center justify-center rounded-md
+                       glass border border-[var(--color-border)] text-[var(--color-text-muted)]
+                       hover:text-orange-400 hover:border-orange-500/40 transition-colors cursor-pointer text-xs"
+            title="Close chat panel"
+          >
+            ✕
+          </button>
           {/* Mode toggle + header */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
@@ -902,6 +914,20 @@ function MentorPageInner() {
             </div>
           )}
         </aside>
+        ) : (
+          /* Collapsed sidebar strip */
+          <div className="w-10 shrink-0 border-r border-[var(--color-border)] flex flex-col items-center py-3 gap-3">
+            <button
+              onClick={() => setChatOpen(true)}
+              className="w-8 h-8 rounded-lg glass border border-[var(--color-border)] flex items-center justify-center
+                         text-[var(--color-text-muted)] hover:text-orange-400 hover:border-orange-500/40
+                         transition-colors cursor-pointer text-sm"
+              title="Open chat panel"
+            >
+              💬
+            </button>
+          </div>
+        )}
 
         {/* ── Right Column: Question + Editor ─────────────── */}
         <main className="flex-1 flex flex-col min-h-0 relative">
@@ -950,59 +976,59 @@ function MentorPageInner() {
                   </p>
                 )}
 
-                {/* ── Question details: input, output, hint, constraints ── */}
-                {activeQ && (
-                  <details className="mt-3 group">
+                {/* ── Test Case Example (always visible) ── */}
+                {activeQ && (activeQ.test_input || activeQ.expected_output) && (
+                  <div className="mt-3 flex items-stretch gap-2 text-[11px]">
+                    {/* Input */}
+                    {activeQ.test_input && (
+                      <div className="flex-1 glass rounded-lg border border-[var(--color-border)] px-3 py-2 flex items-start gap-2 min-w-0">
+                        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-orange-400/80 mt-px">
+                          Input
+                        </span>
+                        <pre className="text-[var(--color-text)] whitespace-pre-wrap font-mono leading-snug break-all">
+                          {activeQ.test_input}
+                        </pre>
+                      </div>
+                    )}
+
+                    {/* Arrow */}
+                    {activeQ.test_input && activeQ.expected_output && (
+                      <span className="shrink-0 flex items-center text-[var(--color-text-muted)] text-xs">→</span>
+                    )}
+
+                    {/* Output */}
+                    {activeQ.expected_output && (
+                      <div className="flex-1 glass rounded-lg border border-green-500/20 px-3 py-2 flex items-start gap-2 min-w-0">
+                        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-green-400/80 mt-px">
+                          Output
+                        </span>
+                        <pre className="text-[var(--color-text)] whitespace-pre-wrap font-mono leading-snug break-all">
+                          {activeQ.expected_output}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── Hint & Constraints (collapsible) ── */}
+                {activeQ && (activeQ.explanation || activeQ.max_points) && (
+                  <details className="mt-2 group">
                     <summary className="text-[11px] text-[var(--color-text-muted)] cursor-pointer select-none hover:text-orange-400 transition-colors flex items-center gap-1.5">
                       <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-                      View Details
+                      Hint &amp; Constraints
                     </summary>
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
-                      {/* Input Format */}
-                      {activeQ.test_input && (
-                        <div className="glass rounded-lg border border-[var(--color-border)] p-2.5 space-y-1">
-                          <span className="font-semibold text-orange-400/80 uppercase tracking-wider text-[10px]">
-                            Input
-                          </span>
-                          <pre className="text-[var(--color-text-muted)] whitespace-pre-wrap font-mono leading-relaxed">
-                            {activeQ.test_input}
-                          </pre>
-                        </div>
-                      )}
-
-                      {/* Expected Output */}
-                      {activeQ.expected_output && (
-                        <div className="glass rounded-lg border border-[var(--color-border)] p-2.5 space-y-1">
-                          <span className="font-semibold text-green-400/80 uppercase tracking-wider text-[10px]">
-                            Expected Output
-                          </span>
-                          <pre className="text-[var(--color-text-muted)] whitespace-pre-wrap font-mono leading-relaxed">
-                            {activeQ.expected_output}
-                          </pre>
-                        </div>
-                      )}
-
-                      {/* Hint / Explanation */}
+                    <div className="mt-2 flex gap-2 text-[11px]">
                       {activeQ.explanation && (
-                        <div className="glass rounded-lg border border-[var(--color-border)] p-2.5 space-y-1">
-                          <span className="font-semibold text-amber-400/80 uppercase tracking-wider text-[10px]">
-                            Hint
-                          </span>
-                          <p className="text-[var(--color-text-muted)] leading-relaxed">
-                            {activeQ.explanation}
-                          </p>
+                        <div className="flex-1 glass rounded-lg border border-amber-500/20 px-3 py-2 space-y-0.5">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400/80">Hint</span>
+                          <p className="text-[var(--color-text-muted)] leading-relaxed">{activeQ.explanation}</p>
                         </div>
                       )}
-
-                      {/* Constraints */}
-                      <div className="glass rounded-lg border border-[var(--color-border)] p-2.5 space-y-1">
-                        <span className="font-semibold text-sky-400/80 uppercase tracking-wider text-[10px]">
-                          Constraints
-                        </span>
+                      <div className="shrink-0 glass rounded-lg border border-[var(--color-border)] px-3 py-2 space-y-0.5">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-400/80">Constraints</span>
                         <ul className="text-[var(--color-text-muted)] leading-relaxed space-y-0.5">
-                          <li>• Max points: <span className="text-orange-400 font-medium">{activeQ.max_points}</span></li>
-                          <li>• Difficulty: <span className="font-medium capitalize">{activeQ.difficulty}</span></li>
-                          <li>• Type: <span className="font-medium">{activeQ.question_type}</span></li>
+                          <li>• Points: <span className="text-orange-400 font-medium">{activeQ.max_points}</span></li>
+                          <li>• {activeQ.difficulty} · {activeQ.question_type}</li>
                         </ul>
                       </div>
                     </div>

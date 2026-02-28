@@ -81,13 +81,32 @@ function tryParseGeneratedQuestions(raw: string | null): GeneratedQuestion[] | n
 }
 
 function fallbackStarterCode(language: string): string {
-  if (language === 'python') {
-    return 'def solve():\n    pass\n\nif __name__ == "__main__":\n    solve()\n';
+  switch (language) {
+    case 'python':
+      return 'def solve():\n    pass\n\nif __name__ == "__main__":\n    solve()\n';
+    case 'c':
+      return '#include <stdio.h>\n\nint main() {\n    // Read input from stdin, print output to stdout\n    return 0;\n}\n';
+    case 'cpp':
+      return '#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n  ios::sync_with_stdio(false);\n  cin.tie(nullptr);\n\n  return 0;\n}\n';
+    case 'java':
+      return 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Read input and print output\n    }\n}\n';
+    case 'go':
+      return 'package main\n\nimport "fmt"\n\nfunc main() {\n\t// Read input with fmt.Scan, print with fmt.Print\n}\n';
+    case 'rust':
+      return 'use std::io;\n\nfn main() {\n    let mut input = String::new();\n    io::stdin().read_line(&mut input).unwrap();\n    // Parse input and print output\n}\n';
+    case 'ruby':
+      return 'def solve(input)\n  # return the result\nend\n';
+    case 'typescript':
+      return 'function solve(input: any): any {\n  // return the result\n}\n';
+    case 'csharp':
+      return 'using System;\n\nclass Program {\n    static void Main() {\n        // Read input with Console.ReadLine(), print with Console.Write()\n    }\n}\n';
+    case 'kotlin':
+      return 'fun main() {\n    // Read input with readLine(), print with print()\n}\n';
+    case 'sql':
+      return '-- Write your SQL query here\nSELECT 1;\n';
+    default:
+      return 'function solve(input) {\n  return "";\n}\n';
   }
-  if (language === 'cpp') {
-    return '#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n  ios::sync_with_stdio(false);\n  cin.tie(nullptr);\n\n  return 0;\n}\n';
-  }
-  return 'function solve(input) {\n  return "";\n}\n\nconst fs = require("fs");\nconst input = fs.readFileSync(0, "utf8");\nprocess.stdout.write(String(solve(input)));\n';
 }
 
 async function generateQuestions(
@@ -97,12 +116,36 @@ async function generateQuestions(
   questionCount: number,
 ): Promise<GeneratedQuestion[]> {
   const lang = interest.language;
-  const langHint =
-    lang === 'python'
-      ? 'Python: starterCode should be just the function def (e.g. `def solve(arr):`) — no stdin/print needed, the driver is injected automatically.'
-      : lang === 'cpp'
-        ? 'C++: starterCode MUST include complete main() with cin/cout.'
-        : 'JavaScript: starterCode should be just the function (e.g. `function solve(arr) {}`) — no require/console.log needed, the driver is injected automatically.';
+  const langHint = (() => {
+    switch (lang) {
+      case 'python':
+        return 'Python: starterCode should be just the function def (e.g. `def solve(arr):`) — no stdin/print needed, the driver is injected automatically.';
+      case 'javascript':
+        return 'JavaScript: starterCode should be just the function (e.g. `function solve(arr) {}`) — no require/console.log needed, the driver is injected automatically.';
+      case 'typescript':
+        return 'TypeScript: starterCode should be just the function with type annotations (e.g. `function solve(arr: number[]): number {}`) — no require/console.log needed, the driver is injected automatically.';
+      case 'ruby':
+        return 'Ruby: starterCode should be just the method def (e.g. `def solve(arr)`) — no puts/STDIN needed, the driver is injected automatically.';
+      case 'c':
+        return 'C: starterCode MUST include complete main() that reads from stdin (scanf) and writes to stdout (printf). For array input, the judge sends: first line = array size N, second line = N space-separated elements. For single values, just one value per line.';
+      case 'cpp':
+        return 'C++: starterCode MUST include complete main() with cin/cout. For array input, the judge sends: first line = array size N, second line = N space-separated elements. For single values, one value per line.';
+      case 'java':
+        return 'Java: starterCode MUST include a class Main with public static void main(String[] args) using Scanner for input and System.out for output. For array input, the judge sends: first line = array size N, second line = N space-separated elements.';
+      case 'go':
+        return 'Go: starterCode MUST include package main with func main() using fmt.Scan for input and fmt.Print for output. For array input, the judge sends: first line = array size N, second line = N space-separated elements.';
+      case 'rust':
+        return 'Rust: starterCode MUST include fn main() that reads from stdin (std::io::stdin). For array input, the judge sends: first line = array size N, second line = N space-separated elements.';
+      case 'csharp':
+        return 'C#: starterCode MUST include a class Program with static void Main() using Console.ReadLine for input and Console.Write for output. For array input, the judge sends: first line = array size N, second line = N space-separated elements.';
+      case 'kotlin':
+        return 'Kotlin: starterCode MUST include fun main() using readLine() for input and print() for output. For array input, the judge sends: first line = array size N, second line = N space-separated elements.';
+      case 'sql':
+        return 'SQL: starterCode should be a SELECT query. The testInput describes the table schema/data context. Output should match the expected result set.';
+      default:
+        return 'starterCode should include a complete program that reads stdin and writes to stdout.';
+    }
+  })();
 
   const llmRaw = await callLLM(
     'question',
@@ -112,10 +155,11 @@ async function generateQuestions(
       'CRITICAL RULES for each question:\n' +
       `- Language: ${lang}\n` +
       `- ${langHint}\n` +
-      '- testInput: a single JSON value that will be passed via stdin (e.g. "[1,2,3]", "hello", "5").\n' +
-      '- expectedOutput: EXACT expected stdout when calling the function with the parsed testInput (just the value, no extra whitespace).\n' +
-      '- The function must accept the parsed testInput as its argument and RETURN the result (not print it).\n' +
-      '- For functions with multiple params, testInput should be a JSON object: {"a":1,"b":2} — keys become arguments.\n',
+      '- testInput: a single JSON value that will be passed via stdin. For compiled languages (C, C++, Java, Go, Rust, C#, Kotlin), the JSON is auto-converted: arrays become "size\\nelements", objects become values on separate lines, primitives become the value itself.\n' +
+      '- expectedOutput: EXACT expected stdout (just the value, no extra whitespace, no trailing newline).\n' +
+      '- For JS/TS/Python/Ruby: the function must accept the parsed testInput as its argument and RETURN the result (not print it). The driver handles I/O.\n' +
+      '- For C/C++/Java/Go/Rust/C#/Kotlin: main() must read the converted plain-text input from stdin and print the result to stdout.\n' +
+      '- For functions with multiple params, testInput should be a JSON object: {"a":1,"b":2} — keys become arguments (JS/TS/Python/Ruby) or separate scanf/cin reads (C/C++/Java/etc).\n',
   );
 
   const parsed = tryParseGeneratedQuestions(llmRaw);
