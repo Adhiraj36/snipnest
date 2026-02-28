@@ -306,7 +306,7 @@ function MentorPageInner() {
     setMentorMode("chat");
   }, []);
 
-  /** Switch to avatar mode — starts session if needed */
+  /** Switch to avatar mode — starts session if needed, sends current context */
   const switchToAvatar = useCallback(async () => {
     setMentorMode("avatar");
     if (!avatarSessionToken) {
@@ -323,6 +323,52 @@ function MentorPageInner() {
     },
     [mentorMode]
   );
+
+  /** Build a concise spoken context string for the avatar */
+  const buildSpokenContext = useCallback(() => {
+    const parts: string[] = [];
+    if (session) {
+      const interest = catalog.find((c) => c.id === session.interest_id);
+      parts.push(
+        `The student is learning ${interest?.name || session.interest_id}, specifically ${session.sub_domain_id} — ${session.topic_id}.`
+      );
+      parts.push(
+        `They are on question ${(session.current_question_index ?? 0) + 1} of ${questions.length}. Session points so far: ${session.points_earned}.`
+      );
+    }
+    if (activeQ) {
+      parts.push(
+        `Current question (${activeQ.difficulty}, worth ${activeQ.max_points} pts): ${activeQ.prompt}`
+      );
+    }
+    if (editorCode.trim()) {
+      const lines = editorCode.trim().split("\n").length;
+      parts.push(
+        `The student has written ${lines} lines of code so far.`
+      );
+    }
+    return parts.join(" ");
+  }, [session, activeQ, editorCode, questions, catalog]);
+
+  /* ── Send context to avatar when question changes or avatar becomes ready ── */
+  const lastSentQRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      mentorMode !== "avatar" ||
+      !avatarRef.current?.isReady ||
+      !activeQ
+    ) return;
+    // Only send when question actually changes
+    if (lastSentQRef.current === activeQ.id) return;
+    lastSentQRef.current = activeQ.id;
+
+    const ctx = buildSpokenContext();
+    if (ctx) {
+      avatarRef.current.sendMessage(
+        `Here is context about what the student is currently working on. Use this to help them but don't repeat it back verbatim — just acknowledge and offer help naturally: ${ctx}`
+      );
+    }
+  }, [mentorMode, activeQ?.id, buildSpokenContext]);
 
   /* ── create session (streaming) ────────────────────────────────────── */
   const createSession = async (e: React.FormEvent) => {
