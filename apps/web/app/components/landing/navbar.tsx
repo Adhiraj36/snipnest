@@ -33,7 +33,7 @@ export function Navbar() {
             <GraduationCap className="h-5 w-5" />
           </div>
           <span className="text-lg font-bold tracking-tight text-[var(--color-text)]">
-            SnipNest
+            Code Sarthi
           </span>
         </Link>
 
