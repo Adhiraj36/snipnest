@@ -104,7 +104,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-orange-400">SnipNest</h1>
+        <h1 className="text-xl font-bold text-orange-400">Code Sarthi</h1>
         <div className="flex items-center gap-4 text-sm">
           {user ? (
             <div className="flex items-center gap-3">

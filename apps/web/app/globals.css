@@ -1,34 +1,78 @@
 @layer theme, base, clerk, components, utilities;
 @import "tailwindcss";
 
+/* ─── Dark-mode variant (class-based) ─────────────────────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─── Design-system tokens ────────────────────────────────────────────────── */
 @theme {
+  /* legacy colour aliases (dashboard / mentor pages) */
   --color-primary-600: #f97316;
   --color-primary-700: #ea580c;
   --color-primary-50: #fff7ed;
   --color-success-700: #027a48;
   --color-success-50: #ecfdf3;
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* fonts */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* animation durations */
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-slow: float 8s ease-in-out infinite;
+  --animate-float-fast: float 4s ease-in-out infinite;
+  --animate-fade-in: fadeIn 0.8s ease-out both;
+  --animate-fade-in-up: fadeInUp 0.8s ease-out both;
+  --animate-slide-in-left: slideInLeft 0.8s ease-out both;
+  --animate-slide-in-right: slideInRight 0.8s ease-out both;
 }
 
+/* ─── Base layer ──────────────────────────────────────────────────────────── */
 @layer base {
-  html,
-  body {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Light-mode defaults (landing page) */
+  :root {
+    --color-bg: #f8fafc;
+    --color-bg-card: #ffffff;
+    --color-text: #0f172a;
+    --color-text-muted: #64748b;
+    --color-border: #e2e8f0;
+    --color-glass: rgba(255, 255, 255, 0.6);
+    --color-glass-border: rgba(255, 255, 255, 0.3);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08);
+    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.1);
+    --gradient-primary: linear-gradient(135deg, #3b82f6, #6366f1);
+    --gradient-hero-bg: radial-gradient(ellipse at 50% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 60%);
+  }
+
+  /* Dark-mode overrides */
+  .dark {
+    --color-bg: #0b1120;
+    --color-bg-card: #1e293b;
+    --color-text: #f1f5f9;
+    --color-text-muted: #94a3b8;
+    --color-border: #334155;
+    --color-glass: rgba(30, 41, 59, 0.6);
+    --color-glass-border: rgba(51, 65, 85, 0.5);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.35);
+    --gradient-primary: linear-gradient(135deg, #60a5fa, #818cf8);
+    --gradient-hero-bg: radial-gradient(ellipse at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 60%);
+  }
+
+  /* Fallback body for dashboard / mentor (dark) pages */
+  html, body {
     background: #09090b;
     color: #f4f4f5;
   }
-}
 
-/*
-  The default border color has changed to `currentcolor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
-@layer base {
   *,
   ::after,
   ::before,
@@ -38,22 +82,71 @@
   }
 }
 
+/* ─── Keyframes ───────────────────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-14px) rotate(1deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ─── Glassmorphism utility ───────────────────────────────────────────────── */
+.glass {
+  background: var(--color-glass);
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  border: 1px solid var(--color-glass-border);
+}
+
+/* ─── Landing page surface ────────────────────────────────────────────────── */
+.landing-bg {
+  background-color: var(--color-bg);
+  background-image: var(--gradient-hero-bg);
+  color: var(--color-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ─── Subtle grid pattern overlay ────────────────────────────────────────── */
+.pattern-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 47px, var(--color-border) 47px, var(--color-border) 48px),
+    repeating-linear-gradient(90deg, transparent, transparent 47px, var(--color-border) 47px, var(--color-border) 48px);
+  opacity: 0.35;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 0%, transparent 70%);
+}
+
+/* ─── Legacy utilities (dashboard / mentor) ───────────────────────────────── */
 .background {
   overflow: hidden;
   background: #f8f8f8;
   background-image: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 11px,
-      #f2f2f2 11px,
-      #f2f2f2 12px
+      0deg, transparent, transparent 11px, #f2f2f2 11px, #f2f2f2 12px
     ),
     repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 11px,
-      #f2f2f2 11px,
-      #f2f2f2 12px
+      90deg, transparent, transparent 11px, #f2f2f2 11px, #f2f2f2 12px
     );
 }
 
@@ -68,12 +161,8 @@
 }
 
 /* Thin custom scrollbar for dark panels */
-.thin-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-.thin-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
+.thin-scrollbar::-webkit-scrollbar { width: 6px; }
+.thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .thin-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(161, 161, 170, 0.25);
   border-radius: 9999px;
