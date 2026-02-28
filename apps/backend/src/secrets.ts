@@ -1,5 +1,5 @@
-// Re-export from env – kept for backward compatibility
-import 'dotenv/config';
+// Re-export from the central env module for backward compatibility
+import { JWT_SECRET, CLERK_SECRET_KEY } from './config/env';
 
-export const SECRET = process.env.JWT_SECRET || '';
-export const CLERK_API_KEY = process.env.CLERK_SECRET_KEY || '';
+export const SECRET = JWT_SECRET;
+export const CLERK_API_KEY = CLERK_SECRET_KEY;

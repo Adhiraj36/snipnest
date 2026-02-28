@@ -18,3 +18,7 @@ export const HEYGEN_AVATAR_ID = process.env.HEYGEN_AVATAR_ID || '';
 export const HEYGEN_VOICE_ID = process.env.HEYGEN_VOICE_ID || '';
 export const HEYGEN_CONTEXT_ID = process.env.HEYGEN_CONTEXT_ID || '';
 export const HEYGEN_IS_SANDBOX = process.env.HEYGEN_IS_SANDBOX !== 'false';
+
+// Auth
+export const JWT_SECRET = process.env.JWT_SECRET || '';
+export const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY || '';
