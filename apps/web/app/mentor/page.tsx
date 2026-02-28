@@ -661,6 +661,15 @@ function MentorPageInner() {
           </h1>
         </div>
         <div className="flex items-center gap-3 text-sm">
+          {session && (
+            <button
+              onClick={deleteCurrentSession}
+              className="px-3 py-1.5 rounded-lg border border-red-500/40 text-red-400 text-xs font-medium
+                         hover:bg-red-500/15 hover:border-red-500/60 transition-colors cursor-pointer"
+            >
+              End Session
+            </button>
+          )}
           {stats && (
             <div className="flex gap-3 mr-4 text-[var(--color-text-muted)]">
               <span>
@@ -939,6 +948,65 @@ function MentorPageInner() {
                   <p className="mt-2 text-sm text-[var(--color-text-muted)] leading-relaxed">
                     {activeQ.prompt}
                   </p>
+                )}
+
+                {/* ── Question details: input, output, hint, constraints ── */}
+                {activeQ && (
+                  <details className="mt-3 group">
+                    <summary className="text-[11px] text-[var(--color-text-muted)] cursor-pointer select-none hover:text-orange-400 transition-colors flex items-center gap-1.5">
+                      <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                      View Details
+                    </summary>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                      {/* Input Format */}
+                      {activeQ.test_input && (
+                        <div className="glass rounded-lg border border-[var(--color-border)] p-2.5 space-y-1">
+                          <span className="font-semibold text-orange-400/80 uppercase tracking-wider text-[10px]">
+                            Input
+                          </span>
+                          <pre className="text-[var(--color-text-muted)] whitespace-pre-wrap font-mono leading-relaxed">
+                            {activeQ.test_input}
+                          </pre>
+                        </div>
+                      )}
+
+                      {/* Expected Output */}
+                      {activeQ.expected_output && (
+                        <div className="glass rounded-lg border border-[var(--color-border)] p-2.5 space-y-1">
+                          <span className="font-semibold text-green-400/80 uppercase tracking-wider text-[10px]">
+                            Expected Output
+                          </span>
+                          <pre className="text-[var(--color-text-muted)] whitespace-pre-wrap font-mono leading-relaxed">
+                            {activeQ.expected_output}
+                          </pre>
+                        </div>
+                      )}
+
+                      {/* Hint / Explanation */}
+                      {activeQ.explanation && (
+                        <div className="glass rounded-lg border border-[var(--color-border)] p-2.5 space-y-1">
+                          <span className="font-semibold text-amber-400/80 uppercase tracking-wider text-[10px]">
+                            Hint
+                          </span>
+                          <p className="text-[var(--color-text-muted)] leading-relaxed">
+                            {activeQ.explanation}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Constraints */}
+                      <div className="glass rounded-lg border border-[var(--color-border)] p-2.5 space-y-1">
+                        <span className="font-semibold text-sky-400/80 uppercase tracking-wider text-[10px]">
+                          Constraints
+                        </span>
+                        <ul className="text-[var(--color-text-muted)] leading-relaxed space-y-0.5">
+                          <li>• Max points: <span className="text-orange-400 font-medium">{activeQ.max_points}</span></li>
+                          <li>• Difficulty: <span className="font-medium capitalize">{activeQ.difficulty}</span></li>
+                          <li>• Type: <span className="font-medium">{activeQ.question_type}</span></li>
+                        </ul>
+                      </div>
+                    </div>
+                  </details>
                 )}
               </div>
 
