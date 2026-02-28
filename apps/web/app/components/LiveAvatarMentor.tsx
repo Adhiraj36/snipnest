@@ -76,6 +76,12 @@ const LiveAvatarMentor = forwardRef<LiveAvatarMentorHandle, Props>(
       typeof navigator !== "undefined" &&
       !!navigator.mediaDevices?.getUserMedia;
 
+    /* ── Keep refs for latest state (avoids stale handle) ───────── */
+    const sessionStateRef = useRef(sessionState);
+    sessionStateRef.current = sessionState;
+    const isStreamReadyRef = useRef(isStreamReady);
+    isStreamReadyRef.current = isStreamReady;
+
     /* ── Expose handle to parent ─────────────────────────────────── */
     useImperativeHandle(
       ref,
@@ -89,7 +95,12 @@ const LiveAvatarMentor = forwardRef<LiveAvatarMentorHandle, Props>(
         interrupt: () => {
           sessionRef.current?.interrupt();
         },
-        isReady: sessionState === SessionState.CONNECTED && isStreamReady,
+        get isReady() {
+          return (
+            sessionStateRef.current === SessionState.CONNECTED &&
+            isStreamReadyRef.current
+          );
+        },
       }),
       [sessionState, isStreamReady]
     );

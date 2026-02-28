@@ -113,6 +113,7 @@ function MentorPageInner() {
   /* avatar mode */
   type MentorMode = "chat" | "avatar";
   const [mentorMode, setMentorMode] = useState<MentorMode>("chat");
+  const mentorModeRef = useRef<MentorMode>("chat");
   const [avatarAvailable, setAvatarAvailable] = useState(false);
   const [avatarSessionToken, setAvatarSessionToken] = useState<string | null>(
     null
@@ -120,6 +121,11 @@ function MentorPageInner() {
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const avatarRef = useRef<LiveAvatarMentorHandle>(null);
+
+  // Keep mentorModeRef in sync
+  useEffect(() => {
+    mentorModeRef.current = mentorMode;
+  }, [mentorMode]);
 
   /* ── initial load ──────────────────────────────────────────────────── */
   useEffect(() => {
@@ -314,21 +320,19 @@ function MentorPageInner() {
     }
   }, [avatarSessionToken, startAvatarSession]);
 
-  /** Pipe a text message to the live avatar (non-blocking, best-effort, with retry) */
-  const sendToAvatar = useCallback(
-    (text: string) => {
-      if (mentorMode !== "avatar") return;
-      const trySend = (retries: number) => {
-        if (avatarRef.current?.isReady) {
-          avatarRef.current.sendMessage(text);
-        } else if (retries > 0) {
-          setTimeout(() => trySend(retries - 1), 1500);
-        }
-      };
-      trySend(3);
-    },
-    [mentorMode]
-  );
+  /** Pipe a text message to the live avatar (reads refs directly, never stale) */
+  const sendToAvatar = useCallback((text: string) => {
+    if (mentorModeRef.current !== "avatar") return;
+    const trySend = (retries: number) => {
+      if (mentorModeRef.current !== "avatar") return;
+      if (avatarRef.current?.isReady) {
+        avatarRef.current.sendMessage(text);
+      } else if (retries > 0) {
+        setTimeout(() => trySend(retries - 1), 2000);
+      }
+    };
+    trySend(5);
+  }, []);
 
   /** Build a concise spoken context string for the avatar */
   const buildSpokenContext = useCallback(() => {
