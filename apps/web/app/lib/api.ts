@@ -172,6 +172,21 @@ export async function getMentorSessions(token: string): Promise<ApiResult<Enrich
     }
 }
 
+export async function deleteMentorSession(
+    token: string,
+    sessionId: string
+): Promise<ApiResult<{ success: boolean }>> {
+    try {
+        const resp = await api.delete(`/mentor/session/${sessionId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return { success: true, data: resp.data as { success: boolean } };
+    } catch (err: any) {
+        console.error(err);
+        return { success: false, error: err?.message || String(err) };
+    }
+}
+
 export async function getMentorAttempts(
     token: string,
     sessionId: string,

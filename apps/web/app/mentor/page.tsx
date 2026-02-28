@@ -18,6 +18,7 @@ import {
   getMentorCatalog,
   getMentorSession,
   getMentorStats,
+  deleteMentorSession,
   startMentorSessionStream,
   submitMentorAttempt,
   streamAvatarChat,
@@ -92,6 +93,7 @@ function MentorPageInner() {
   const [editorCode, setEditorCode] = useState("");
 
   /* ui */
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [resultMessage, setResultMessage] = useState("");
@@ -195,6 +197,7 @@ function MentorPageInner() {
         setError(e.message);
       } finally {
         setLoading(false);
+        setInitialLoading(false);
       }
     };
     load();
@@ -452,6 +455,32 @@ function MentorPageInner() {
     }
   };
 
+  /* ── delete session ────────────────────────────────────────────────── */
+  const deleteCurrentSession = async () => {
+    if (!session) return;
+    if (!confirm("Delete this session? All progress will be lost.")) return;
+    try {
+      const token = await getToken({ template: "codesarathi-backend" });
+      if (!token) return setError("Failed to authenticate");
+      const resp = await deleteMentorSession(token, session.id);
+      if (!resp.success) return setError(resp.error);
+      // Reset all session state
+      setSession(null);
+      setQuestions([]);
+      setAttempts([]);
+      setEditorCode("");
+      setResultMessage("");
+      setStreamingTheory("");
+      setChatHistory([]);
+      setTheoryOpen(false);
+      // Refresh stats
+      const statsResp = await getMentorStats(token);
+      if (statsResp.success) setStats(statsResp.data);
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
   /* ── submit answer ─────────────────────────────────────────────────── */
   const submitAnswer = async () => {
     if (!session || !activeQ) return;
@@ -655,7 +684,15 @@ function MentorPageInner() {
       </header>
 
       {/* ── Body ─────────────────────────────────────────────── */}
-      {!session ? (
+      {initialLoading ? (
+        /* ── Loading state (prevents topic picker flash on resume) ─── */
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-10 h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-[var(--color-text-muted)]">Loading session…</p>
+          </div>
+        </div>
+      ) : !session ? (
         /* ── Full-screen topic picker ─────────────────────── */
         <TopicPicker
           catalog={catalog}
@@ -841,8 +878,17 @@ function MentorPageInner() {
                   {session.status}
                 </span>
               </div>
-              <div className="text-xs text-[var(--color-text-muted)]">
-                Session pts: <span className="text-orange-400 font-bold">{session.points_earned}</span>
+              <div className="flex justify-between items-center">
+                <div className="text-xs text-[var(--color-text-muted)]">
+                  Session pts: <span className="text-orange-400 font-bold">{session.points_earned}</span>
+                </div>
+                <button
+                  onClick={deleteCurrentSession}
+                  className="text-[10px] px-2 py-1 rounded border border-red-500/30 text-red-400 hover:bg-red-500/15 hover:border-red-500/50 transition-colors cursor-pointer"
+                  title="Delete session"
+                >
+                  Delete
+                </button>
               </div>
             </div>
           )}

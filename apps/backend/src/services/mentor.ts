@@ -409,6 +409,27 @@ export async function submitAnswer(userId: string, payload: SubmissionPayload) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Delete a session and all related data
+// ---------------------------------------------------------------------------
+
+export async function deleteSession(userId: string, sessionId: string): Promise<{ success: boolean; error?: string }> {
+  // Verify the session belongs to this user
+  const [session] = await db
+    .select()
+    .from(mentorSessions)
+    .where(and(eq(mentorSessions.id, sessionId), eq(mentorSessions.user_id, userId)));
+
+  if (!session) return { success: false, error: 'Session not found' };
+
+  // Delete attempts → questions → session (order matters for referential integrity)
+  await db.delete(questionAttempts).where(eq(questionAttempts.session_id, sessionId));
+  await db.delete(mentorQuestions).where(eq(mentorQuestions.session_id, sessionId));
+  await db.delete(mentorSessions).where(eq(mentorSessions.id, sessionId));
+
+  return { success: true };
+}
+
 export async function getUserStats(userId: string) {
   const sessions = await db.select().from(mentorSessions).where(eq(mentorSessions.user_id, userId));
   return {

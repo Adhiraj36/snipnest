@@ -2,6 +2,7 @@ import { Router } from 'express';
 import verifyToken from '../middleware';
 import { INTEREST_CATALOG, findCatalogPath } from '../config/catalog';
 import {
+  deleteSession,
   getSessionAttempts,
   getSessionDetails,
   getUserSessions,
@@ -185,6 +186,15 @@ router.post('/session/:sessionId/submit', verifyToken, async (req, res) => {
 
   if (!result.success) return res.status(400).json({ error: result.error });
   return res.status(200).json(result.data);
+});
+
+router.delete('/session/:sessionId', verifyToken, async (req, res) => {
+  const userId = extractUserId(req);
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const result = await deleteSession(userId, req.params.sessionId);
+  if (!result.success) return res.status(404).json({ error: result.error });
+  return res.status(200).json({ success: true });
 });
 
 router.get('/stats/me', verifyToken, async (req, res) => {
